@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>成绩分析可视化系统</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="libs/chart.css">
+    <link rel="stylesheet" href="print.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 头部导航 -->
+        <header class="header">
+            <div class="header-content">
+                <h1>🎓 成绩分析可视化系统</h1>
+                <p>完全离线的学生成绩数据分析工具</p>
+                <div class="header-stats" id="headerStats" style="display: none;">
+                    <span>📚 数据已加载</span>
+                    <span id="quickStats"></span>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主要内容区域 -->
+        <main class="main-content">
+            <!-- 数据输入区域 -->
+            <section class="data-input-section">
+                <div class="card">
+                    <h2>📊 数据导入</h2>
+                    <div class="input-methods">
+                        <div class="method-card">
+                            <h3>文件导入</h3>
+                            <input type="file" id="fileInput" accept=".csv,.txt" class="file-input">
+                            <label for="fileInput" class="file-label">
+                                📁 选择CSV文件
+                            </label>
+                            <p class="method-desc">支持CSV格式的成绩文件</p>
+                        </div>
+                        
+                        <div class="method-card">
+                            <h3>手动输入</h3>
+                            <button id="manualInputBtn" class="btn btn-secondary">
+                                ✏️ 手动录入数据
+                            </button>
+                            <p class="method-desc">直接在表格中输入成绩数据</p>
+                        </div>
+                        
+                        <div class="method-card">
+                            <h3>示例数据</h3>
+                            <button id="loadSampleBtn" class="btn btn-primary">
+                                🔄 加载示例数据
+                            </button>
+                            <p class="method-desc">使用预设的示例数据快速体验</p>
+                        </div>
+                        
+                        <div class="method-card">
+                            <h3>示例CSV文件</h3>
+                            <button id="downloadSampleBtn" class="btn btn-secondary">
+                                📥 下载示例CSV
+                            </button>
+                            <p class="method-desc">下载标准格式的示例CSV文件</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 数据预览区域 -->
+            <section class="data-preview-section" id="dataPreviewSection" style="display: none;">
+                <div class="card">
+                    <h2>📋 数据预览</h2>
+                    <div class="data-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">学生数量:</span>
+                            <span class="stat-value" id="studentCount">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">科目数量:</span>
+                            <span class="stat-value" id="subjectCount">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">平均分:</span>
+                            <span class="stat-value" id="averageScore">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">最高分:</span>
+                            <span class="stat-value" id="maxScore">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">最低分:</span>
+                            <span class="stat-value" id="minScore">0</span>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table id="dataTable" class="data-table">
+                            <thead id="tableHead"></thead>
+                            <tbody id="tableBody"></tbody>
+                        </table>
+                    </div>
+                    <div class="table-actions">
+                        <!-- <button id="editDataBtn" class="btn btn-secondary">编辑数据</button> -->
+                        <button id="clearDataBtn" class="btn btn-secondary">清空数据</button>
+                        <button id="analyzeBtn" class="btn btn-primary">开始分析</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 分析选项区域 -->
+            <section class="analysis-options-section" id="analysisOptionsSection" style="display: none;">
+                <div class="card">
+                    <h2>⚙️ 分析选项</h2>
+                    <div class="options-grid">
+                        <div class="option-group">
+                            <h3>图表类型</h3>
+                            <div class="checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="barChart" checked>
+                                    <span>柱状图 - 成绩分布</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="lineChart" checked>
+                                    <span>折线图 - 趋势分析</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="pieChart" checked>
+                                    <span>饼图 - 等级分布</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="radarChart" checked>
+                                    <span>雷达图 - 综合能力</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="option-group">
+                            <h3>分析维度</h3>
+                            <div class="checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="bySubject" checked>
+                                    <span>按科目分析</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="byStudent" checked>
+                                    <span>按学生分析</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="byGrade" checked>
+                                    <span>按等级分析</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <button id="generateChartsBtn" class="btn btn-primary btn-large">生成图表</button>
+                </div>
+            </section>
+
+            <!-- 图表展示区域 -->
+            <section class="charts-section" id="chartsSection" style="display: none;">
+                <div class="charts-header">
+                    <h2>📈 数据分析结果</h2>
+                    <div class="chart-controls">
+                        <button id="refreshChartsBtn" class="btn btn-primary">🔄 刷新图表</button>
+                        <button id="saveImageBtn" class="btn btn-secondary">💾 保存图片</button>
+                        <button id="printBtn" class="btn btn-secondary">🖨️ 打印图表</button>
+                    </div>
+                </div>
+                
+                <!-- 图表网格 -->
+                <div class="charts-grid">
+                    <!-- 成绩分布柱状图 -->
+                    <div class="chart-card" id="barChartCard">
+                        <h3>成绩分布 - 柱状图</h3>
+                        <div class="chart-canvas-wrapper">
+                            <canvas id="barChartCanvas"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- 趋势分析折线图 -->
+                    <div class="chart-card" id="lineChartCard">
+                        <h3>成绩趋势 - 折线图</h3>
+                        <div class="chart-canvas-wrapper">
+                            <canvas id="lineChartCanvas"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- 等级分布饼图 -->
+                    <div class="chart-card" id="pieChartCard">
+                        <h3>等级分布 - 饼图</h3>
+                        <div class="chart-canvas-wrapper">
+                            <canvas id="pieChartCanvas"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- 综合能力雷达图 -->
+                    <div class="chart-card" id="radarChartCard">
+                        <h3>综合能力 - 雷达图</h3>
+                        <div class="chart-canvas-wrapper">
+                            <canvas id="radarChartCanvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 统计摘要 -->
+                <div class="summary-section">
+                    <div class="card">
+                        <h3>📊 统计摘要</h3>
+                        <div class="summary-grid" id="summaryGrid">
+                            <!-- 动态生成的统计信息 -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 手动输入模态框 -->
+            <div id="manualInputModal" class="modal" style="display: none;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>手动输入成绩数据</h3>
+                        <button class="modal-close" id="closeModal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <!-- 科目管理区域 -->
+                        <div class="subject-management" id="subjectManagement">
+                            <h4>📚 科目管理</h4>
+                            <div class="current-subjects">
+                                <label>当前科目：</label>
+                                <div class="subjects-list" id="subjectsList">
+                                    <!-- 动态生成科目标签 -->
+                                </div>
+                            </div>
+                            <div class="add-subject">
+                                <div class="subject-input-group">
+                                    <input type="text" id="newSubjectInput" placeholder="输入新科目名称（如：历史、地理）" maxlength="10">
+                                    <button id="addSubjectBtn" class="btn btn-small btn-primary">添加科目</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 学生数据输入区域 -->
+                        <div class="input-form" id="dynamicInputForm">
+                            <!-- 动态生成的表单字段将在这里插入 -->
+                        </div>
+                        <div class="modal-actions">
+                            <button id="addStudentBtn" class="btn btn-primary">添加学生</button>
+                            <button id="finishInputBtn" class="btn btn-secondary">完成输入</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 全屏查看模态框 (将被移除) -->
+            <!-- 
+            <div id="fullscreenModal" class="modal fullscreen-modal" style="display: none;">
+                <div class="fullscreen-content">
+                    <div class="fullscreen-header">
+                        <h3 id="fullscreenTitle">图表全屏查看</h3>
+                        <div class="fullscreen-controls">
+                            <button id="downloadFullscreenBtn" class="btn btn-primary">💾 下载图片</button>
+                            <button class="modal-close" id="closeFullscreenModal">&times;</button>
+                        </div>
+                    </div>
+                    <div class="fullscreen-body">
+                        <canvas id="fullscreenCanvas"></canvas>
+                    </div>
+                </div>
+            </div>
+            -->
+
+            <!-- 提示消息 -->
+            <div id="toast" class="toast" style="display: none;">
+                <div class="toast-content">
+                    <span class="toast-icon">✅</span>
+                    <span class="toast-message">操作成功</span>
+                </div>
+            </div>
+        </main>
+
+        <!-- 页脚 -->
+        <footer class="footer">
+            <p>&copy; 2025 成绩分析可视化系统 - 完全离线版本</p>
+        </footer>
+    </div>
+
+    <!-- 引入离线JS库和自定义脚本 -->
+    <script src="libs/chart.min.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/data-processor.js"></script>
+</body>
+</html> 
