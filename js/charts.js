@@ -20,7 +20,7 @@ class ChartManager {
         if (this.data.length === 0) return [];
         const firstStudent = this.data[0];
         return Object.keys(firstStudent).filter(key => 
-            key !== '姓名' && key !== 'name' && key !== '学生姓名'
+            !['姓名', 'name', '学生姓名', 'Name', 'NAME', '学生'].includes(key)
         );
     }
 
@@ -339,27 +339,70 @@ class ChartManager {
 
     // 创建散点图 - 学科相关性分析
     createScatterChart(canvasId, subjectX, subjectY) {
-        const ctx = document.getElementById(canvasId).getContext('2d');
+        console.log('createScatterChart被调用，canvasId:', canvasId);
         
-        const scatterData = this.data.map(student => {
-            const studentName = student['姓名'] || student['name'] || student['学生姓名'];
-            return {
-                x: student[subjectX],
-                y: student[subjectY],
-                label: studentName
-            };
-        });
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) {
+            console.error('Canvas元素不存在:', canvasId);
+            return null;
+        }
+        
+        const ctx = canvas.getContext('2d');
+        console.log('获取到canvas context:', ctx);
+        
+        // 如果科目少于2个，显示提示信息
+        if (this.subjects.length < 2) {
+            ctx.font = '16px Arial';
+            ctx.fillStyle = '#666';
+            ctx.textAlign = 'center';
+            ctx.fillText('至少需要2个科目才能进行相关性分析', ctx.canvas.width / 2, ctx.canvas.height / 2);
+            return null;
+        }
+        
+        // 计算所有科目两两之间的相关性系数
+        const correlationData = [];
+        const labels = [];
+        
+        for (let i = 0; i < this.subjects.length; i++) {
+            for (let j = i + 1; j < this.subjects.length; j++) {
+                const subjectA = this.subjects[i];
+                const subjectB = this.subjects[j];
+                
+                const scoresA = this.data.map(student => student[subjectA]);
+                const scoresB = this.data.map(student => student[subjectB]);
+                
+                const correlation = this.calculateCorrelation(scoresA, scoresB);
+                
+                correlationData.push({
+                    x: i,
+                    y: j,
+                    correlation: correlation,
+                    label: `${subjectA} vs ${subjectB}`
+                });
+                
+                labels.push(`${subjectA}-${subjectB}`);
+            }
+        }
+        
+        console.log('相关性数据:', correlationData);
 
+        // 创建相关性柱状图
         return new Chart(ctx, {
-            type: 'scatter',
+            type: 'bar',
             data: {
+                labels: labels,
                 datasets: [{
-                    label: `${subjectX} vs ${subjectY}`,
-                    data: scatterData,
-                    backgroundColor: '#667eea',
-                    borderColor: '#764ba2',
-                    pointRadius: 8,
-                    pointHoverRadius: 10
+                    label: '相关性系数',
+                    data: correlationData.map(d => d.correlation),
+                    backgroundColor: correlationData.map(d => {
+                        const abs = Math.abs(d.correlation);
+                        if (abs >= 0.7) return '#e74c3c'; // 强相关 - 红色
+                        if (abs >= 0.5) return '#f39c12'; // 中等相关 - 橙色
+                        if (abs >= 0.3) return '#f1c40f'; // 弱相关 - 黄色
+                        return '#95a5a6'; // 很弱相关 - 灰色
+                    }),
+                    borderColor: '#2c3e50',
+                    borderWidth: 1
                 }]
             },
             options: {
@@ -368,16 +411,30 @@ class ChartManager {
                 plugins: {
                     title: {
                         display: true,
-                        text: `${subjectX} 与 ${subjectY} 相关性分析`,
+                        text: '科目相关性分析矩阵',
                         font: {
                             size: 16,
                             weight: 'bold'
                         }
                     },
+                    legend: {
+                        display: false
+                    },
                     tooltip: {
                         callbacks: {
                             label: function(context) {
-                                return `${context.raw.label}: (${context.parsed.x}, ${context.parsed.y})`;
+                                const correlation = context.parsed.y;
+                                let strength = '';
+                                const abs = Math.abs(correlation);
+                                if (abs >= 0.7) strength = '强相关';
+                                else if (abs >= 0.5) strength = '中等相关';
+                                else if (abs >= 0.3) strength = '弱相关';
+                                else strength = '很弱相关';
+                                
+                                return `相关性: ${correlation.toFixed(3)} (${strength})`;
+                            },
+                            afterLabel: function(context) {
+                                return context.parsed.y > 0 ? '正相关：成绩同向变化' : '负相关：成绩反向变化';
                             }
                         }
                     }
@@ -386,63 +443,84 @@ class ChartManager {
                     x: {
                         title: {
                             display: true,
-                            text: subjectX
+                            text: '科目组合'
                         },
-                        min: 0,
-                        max: 100
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
                     },
                     y: {
                         title: {
                             display: true,
-                            text: subjectY
+                            text: '相关性系数'
                         },
-                        min: 0,
-                        max: 100
+                        min: -1,
+                        max: 1,
+                        ticks: {
+                            stepSize: 0.2,
+                            callback: function(value) {
+                                return value.toFixed(1);
+                            }
+                        }
                     }
                 }
             }
         });
     }
 
+    // 计算相关性系数的辅助方法
+    calculateCorrelation(x, y) {
+        const n = x.length;
+        const sumX = x.reduce((a, b) => a + b, 0);
+        const sumY = y.reduce((a, b) => a + b, 0);
+        const sumXY = x.reduce((sum, xi, i) => sum + xi * y[i], 0);
+        const sumX2 = x.reduce((sum, xi) => sum + xi * xi, 0);
+        const sumY2 = y.reduce((sum, yi) => sum + yi * yi, 0);
+        
+        const numerator = n * sumXY - sumX * sumY;
+        const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+        
+        return denominator === 0 ? 0 : parseFloat((numerator / denominator).toFixed(3));
+    }
+
     // 创建混合图表 - 成绩分布与平均线
     createMixedChart(canvasId) {
         const ctx = document.getElementById(canvasId).getContext('2d');
         
-        const studentNames = this.data.map(student => 
-            student['姓名'] || student['name'] || student['学生姓名']
-        );
-        
-        const totalScores = this.data.map(student => 
-            this.subjects.reduce((sum, subject) => sum + student[subject], 0)
-        );
-        
-        const average = totalScores.reduce((a, b) => a + b, 0) / totalScores.length;
-        const averageLine = new Array(totalScores.length).fill(average);
+        const averages = this.subjects.map(subject => {
+            const total = this.data.reduce((sum, student) => sum + student[subject], 0);
+            return (total / this.data.length).toFixed(1);
+        });
+
+        const maxScores = this.subjects.map(subject => {
+            return Math.max(...this.data.map(student => student[subject]));
+        });
 
         return new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: studentNames,
+                labels: this.subjects,
                 datasets: [
                     {
                         type: 'bar',
-                        label: '总分',
-                        data: totalScores,
-                        backgroundColor: '#667eea60',
-                        borderColor: '#667eea',
+                        label: '平均分',
+                        data: averages,
+                        backgroundColor: this.colors.primary[0] + '60',
+                        borderColor: this.colors.primary[0],
                         borderWidth: 2,
-                        borderRadius: 6
+                        yAxisID: 'y'
                     },
                     {
                         type: 'line',
-                        label: '平均分',
-                        data: averageLine,
-                        borderColor: '#f5576c',
-                        backgroundColor: '#f5576c20',
+                        label: '最高分',
+                        data: maxScores,
+                        borderColor: this.colors.primary[1],
+                        backgroundColor: this.colors.primary[1] + '20',
                         borderWidth: 3,
                         fill: false,
-                        tension: 0,
-                        pointRadius: 0
+                        tension: 0.4,
+                        yAxisID: 'y'
                     }
                 ]
             },
@@ -452,7 +530,7 @@ class ChartManager {
                 plugins: {
                     title: {
                         display: true,
-                        text: '学生总分分布与平均线',
+                        text: '平均分与最高分对比',
                         font: {
                             size: 16,
                             weight: 'bold'
@@ -463,20 +541,285 @@ class ChartManager {
                     }
                 },
                 scales: {
-                    y: {
-                        beginAtZero: true,
+                    x: {
                         title: {
                             display: true,
-                            text: '总分'
+                            text: '科目'
                         }
                     },
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        beginAtZero: true,
+                        max: 100,
+                        title: {
+                            display: true,
+                            text: '分数'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // 新增：创建箱线图 - 分数分布分析
+    createBoxChart(canvasId) {
+        console.log('createBoxChart被调用，canvasId:', canvasId);
+        
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) {
+            console.error('Canvas元素不存在:', canvasId);
+            return null;
+        }
+        
+        const ctx = canvas.getContext('2d');
+        console.log('获取到canvas context:', ctx);
+        
+        // 由于Chart.js原生不支持箱线图，我们用分组柱状图模拟
+        const statistics = this.subjects.map(subject => {
+            const scores = this.data.map(student => student[subject]).sort((a, b) => a - b);
+            const min = Math.min(...scores);
+            const max = Math.max(...scores);
+            const q1 = scores[Math.floor(scores.length * 0.25)];
+            const median = scores[Math.floor(scores.length * 0.5)];
+            const q3 = scores[Math.floor(scores.length * 0.75)];
+            const mean = scores.reduce((sum, score) => sum + score, 0) / scores.length;
+            
+            return { min, q1, median, q3, max, mean };
+        });
+
+        console.log('箱线图统计数据:', statistics);
+
+        return new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: this.subjects,
+                datasets: [
+                    {
+                        label: '最小值',
+                        data: statistics.map(s => s.min),
+                        backgroundColor: this.colors.primary[0] + '40',
+                        borderColor: this.colors.primary[0],
+                        borderWidth: 1
+                    },
+                    {
+                        label: '第一四分位数',
+                        data: statistics.map(s => s.q1),
+                        backgroundColor: this.colors.primary[1] + '40',
+                        borderColor: this.colors.primary[1],
+                        borderWidth: 1
+                    },
+                    {
+                        label: '中位数',
+                        data: statistics.map(s => s.median),
+                        backgroundColor: this.colors.primary[2] + '60',
+                        borderColor: this.colors.primary[2],
+                        borderWidth: 2
+                    },
+                    {
+                        label: '第三四分位数',
+                        data: statistics.map(s => s.q3),
+                        backgroundColor: this.colors.primary[3] + '40',
+                        borderColor: this.colors.primary[3],
+                        borderWidth: 1
+                    },
+                    {
+                        label: '最大值',
+                        data: statistics.map(s => s.max),
+                        backgroundColor: this.colors.primary[4] + '40',
+                        borderColor: this.colors.primary[4],
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '各科目分数分布统计',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        }
+                    },
+                    legend: {
+                        position: 'bottom'
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: '科目'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        title: {
+                            display: true,
+                            text: '分数'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // 新增：创建堆积柱状图 - 成绩段分布
+    createStackedBarChart(canvasId) {
+        console.log('createStackedBarChart被调用，canvasId:', canvasId);
+        
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) {
+            console.error('Canvas元素不存在:', canvasId);
+            return null;
+        }
+        
+        const ctx = canvas.getContext('2d');
+        console.log('获取到canvas context:', ctx);
+        
+        const gradeRanges = {
+            'A级 (90-100)': this.subjects.map(() => 0),
+            'B级 (80-89)': this.subjects.map(() => 0),
+            'C级 (70-79)': this.subjects.map(() => 0),
+            'D级 (60-69)': this.subjects.map(() => 0),
+            'F级 (<60)': this.subjects.map(() => 0)
+        };
+
+        this.data.forEach(student => {
+            this.subjects.forEach((subject, index) => {
+                const score = student[subject];
+                if (score >= 90) gradeRanges['A级 (90-100)'][index]++;
+                else if (score >= 80) gradeRanges['B级 (80-89)'][index]++;
+                else if (score >= 70) gradeRanges['C级 (70-79)'][index]++;
+                else if (score >= 60) gradeRanges['D级 (60-69)'][index]++;
+                else gradeRanges['F级 (<60)'][index]++;
+            });
+        });
+
+        const datasets = Object.keys(gradeRanges).map((grade, index) => ({
+            label: grade,
+            data: gradeRanges[grade],
+            backgroundColor: this.colors.primary[index % this.colors.primary.length],
+            borderColor: this.colors.primary[index % this.colors.primary.length],
+            borderWidth: 1
+        }));
+
+        return new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: this.subjects,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '各科目成绩等级分布',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        }
+                    },
+                    legend: {
+                        position: 'bottom'
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: '科目'
+                        },
+                        stacked: true
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: '学生人数'
+                        },
+                        stacked: true,
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    // 新增：创建热力图 - 成绩矩阵（用柱状图模拟）
+    createHeatmapChart(canvasId) {
+        console.log('createHeatmapChart被调用，canvasId:', canvasId);
+        
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) {
+            console.error('Canvas元素不存在:', canvasId);
+            return null;
+        }
+        
+        const ctx = canvas.getContext('2d');
+        console.log('获取到canvas context:', ctx);
+        
+        // 计算每个学生的总分并排序
+        const studentsWithTotal = this.data.map(student => {
+            const name = student['姓名'] || student['name'] || student['学生姓名'];
+            const total = this.subjects.reduce((sum, subject) => sum + student[subject], 0);
+            return { name, total, ...student };
+        }).sort((a, b) => b.total - a.total).slice(0, 10); // 取前10名
+
+        // 为每个科目创建数据集
+        const datasets = this.subjects.map((subject, index) => ({
+            label: subject,
+            data: studentsWithTotal.map(student => student[subject]),
+            backgroundColor: this.colors.primary[index % this.colors.primary.length] + '80',
+            borderColor: this.colors.primary[index % this.colors.primary.length],
+            borderWidth: 1
+        }));
+
+        return new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: studentsWithTotal.map(student => student.name),
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '前10名学生各科成绩矩阵',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        }
+                    },
+                    legend: {
+                        position: 'bottom'
+                    }
+                },
+                scales: {
                     x: {
                         title: {
                             display: true,
                             text: '学生'
                         }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        title: {
+                            display: true,
+                            text: '分数'
+                        }
                     }
-                }
+                },
+                indexAxis: 'x'
             }
         });
     }

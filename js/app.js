@@ -58,6 +58,11 @@ class GradeAnalyzer {
             this.finishManualInput();
         });
 
+        // 分析选项模态框事件
+        document.getElementById('closeAnalysisModal').addEventListener('click', () => {
+            this.hideAnalysisOptionsModal();
+        });
+
         // 科目管理事件
         document.getElementById('addSubjectBtn').addEventListener('click', () => {
             this.addNewSubject();
@@ -92,6 +97,7 @@ class GradeAnalyzer {
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 this.hideManualInputModal();
+                this.hideAnalysisOptionsModal();
             }
         });
 
@@ -701,10 +707,16 @@ class GradeAnalyzer {
     }
 
     showAnalysisOptions() {
-        document.getElementById('analysisOptionsSection').style.display = 'block';
+        this.showAnalysisOptionsModal();
     }
 
     generateCharts() {
+        console.log('generateCharts方法被调用');
+        console.log('当前数据:', this.data);
+        
+        // 隐藏分析选项模态框
+        this.hideAnalysisOptionsModal();
+        
         // 显示图表区域
         document.getElementById('chartsSection').style.display = 'block';
         
@@ -723,39 +735,109 @@ class GradeAnalyzer {
     createCharts() {
         console.log('Creating charts, data:', this.data);
         console.log('Chart object available:', typeof Chart !== 'undefined');
+        console.log('开始创建图表...');
 
         if (!this.data || this.data.length === 0) {
             this.showToast('没有数据可以生成图表。', 'warning');
             return;
         }
 
+        // 销毁已存在的图表实例，避免Canvas重用错误
+        Object.keys(this.charts).forEach(key => {
+            if (this.charts[key] && typeof this.charts[key].destroy === 'function') {
+                console.log(`销毁旧图表: ${key}`);
+                this.charts[key].destroy();
+                delete this.charts[key];
+            }
+        });
+
         const chartManager = new ChartManager(this.data);
+        console.log('ChartManager已创建');
         
         // 获取选中的图表类型
         const barChart = document.getElementById('barChart').checked;
         const lineChart = document.getElementById('lineChart').checked;
         const pieChart = document.getElementById('pieChart').checked;
         const radarChart = document.getElementById('radarChart').checked;
+        const scatterChart = document.getElementById('scatterChart').checked;
+        const boxChart = document.getElementById('boxChart').checked;
+        const stackedBarChart = document.getElementById('stackedBarChart').checked;
+        const heatmapChart = document.getElementById('heatmapChart').checked;
+
+        console.log('选中的图表类型:', {
+            barChart, lineChart, pieChart, radarChart, 
+            scatterChart, boxChart, stackedBarChart, heatmapChart
+        });
 
         // 显示/隐藏图表卡片
         document.getElementById('barChartCard').style.display = barChart ? 'block' : 'none';
         document.getElementById('lineChartCard').style.display = lineChart ? 'block' : 'none';
         document.getElementById('pieChartCard').style.display = pieChart ? 'block' : 'none';
         document.getElementById('radarChartCard').style.display = radarChart ? 'block' : 'none';
+        document.getElementById('scatterChartCard').style.display = scatterChart ? 'block' : 'none';
+        document.getElementById('boxChartCard').style.display = boxChart ? 'block' : 'none';
+        document.getElementById('stackedBarChartCard').style.display = stackedBarChart ? 'block' : 'none';
+        document.getElementById('heatmapChartCard').style.display = heatmapChart ? 'block' : 'none';
 
         // 生成选中的图表
         if (barChart) {
+            console.log('创建柱状图...');
+            const canvas = document.getElementById('barChartCanvas');
+            console.log('柱状图canvas元素:', canvas);
             this.charts.bar = chartManager.createBarChart('barChartCanvas');
+            console.log('柱状图创建结果:', this.charts.bar);
         }
         if (lineChart) {
+            console.log('创建折线图...');
+            const canvas = document.getElementById('lineChartCanvas');
+            console.log('折线图canvas元素:', canvas);
             this.charts.line = chartManager.createLineChart('lineChartCanvas');
+            console.log('折线图创建结果:', this.charts.line);
         }
         if (pieChart) {
+            console.log('创建饼图...');
+            const canvas = document.getElementById('pieChartCanvas');
+            console.log('饼图canvas元素:', canvas);
             this.charts.pie = chartManager.createPieChart('pieChartCanvas');
+            console.log('饼图创建结果:', this.charts.pie);
         }
         if (radarChart) {
+            console.log('创建雷达图...');
+            const canvas = document.getElementById('radarChartCanvas');
+            console.log('雷达图canvas元素:', canvas);
             this.charts.radar = chartManager.createRadarChart('radarChartCanvas');
+            console.log('雷达图创建结果:', this.charts.radar);
         }
+        if (scatterChart) {
+            console.log('创建散点图...');
+            const canvas = document.getElementById('scatterChartCanvas');
+            console.log('散点图canvas元素:', canvas);
+            this.charts.scatter = chartManager.createScatterChart('scatterChartCanvas');
+            console.log('散点图创建结果:', this.charts.scatter);
+        }
+        if (boxChart) {
+            console.log('创建箱线图...');
+            const canvas = document.getElementById('boxChartCanvas');
+            console.log('箱线图canvas元素:', canvas);
+            this.charts.box = chartManager.createBoxChart('boxChartCanvas');
+            console.log('箱线图创建结果:', this.charts.box);
+        }
+        if (stackedBarChart) {
+            console.log('创建堆积柱状图...');
+            const canvas = document.getElementById('stackedBarChartCanvas');
+            console.log('堆积柱状图canvas元素:', canvas);
+            this.charts.stackedBar = chartManager.createStackedBarChart('stackedBarChartCanvas');
+            console.log('堆积柱状图创建结果:', this.charts.stackedBar);
+        }
+        if (heatmapChart) {
+            console.log('创建热力图...');
+            const canvas = document.getElementById('heatmapChartCanvas');
+            console.log('热力图canvas元素:', canvas);
+            this.charts.heatmap = chartManager.createHeatmapChart('heatmapChartCanvas');
+            console.log('热力图创建结果:', this.charts.heatmap);
+        }
+        
+        console.log('图表创建完成');
     }
 
     generateSummary() {
@@ -834,13 +916,21 @@ class GradeAnalyzer {
     clearData() {
         if (confirm('确定要清空所有数据吗？此操作不可撤销。')) {
             this.data = [];
+            
+            // 销毁所有图表实例
+            Object.keys(this.charts).forEach(key => {
+                if (this.charts[key] && typeof this.charts[key].destroy === 'function') {
+                    console.log(`清空数据时销毁图表: ${key}`);
+                    this.charts[key].destroy();
+                }
+            });
             this.charts = {};
+            
             // 重置为默认科目
             this.subjects = ['语文', '数学', '英语', '物理', '化学'];
             
             // 隐藏所有相关section
             document.getElementById('dataPreviewSection').style.display = 'none';
-            document.getElementById('analysisOptionsSection').style.display = 'none';
             document.getElementById('chartsSection').style.display = 'none';
             document.getElementById('headerStats').style.display = 'none';
             
@@ -866,11 +956,11 @@ class GradeAnalyzer {
         this.showToast('图表已刷新', 'success');
     }
 
-    // 保存所有图表为图片
+    // 保存完整分析报告为图片
     saveChartsAsImages() {
         const visibleCharts = Object.keys(this.charts).filter(key => {
             const card = document.getElementById(`${key}ChartCard`);
-            return card && card.style.display !== 'none';
+            return card && card.style.display !== 'none' && this.charts[key];
         });
 
         if (visibleCharts.length === 0) {
@@ -878,25 +968,253 @@ class GradeAnalyzer {
             return;
         }
 
-        visibleCharts.forEach((chartKey, index) => {
-            setTimeout(() => {
+        this.showToast('正在生成完整分析报告...', 'info');
+        
+        // 等待所有图表渲染完成后再生成报告
+        setTimeout(() => {
+            this.generateFullReport(visibleCharts);
+        }, 1000);
+    }
+
+    // 生成完整的分析报告图片
+    generateFullReport(visibleCharts) {
+        // 创建一个大的canvas用于合并所有内容
+        const reportCanvas = document.createElement('canvas');
+        const ctx = reportCanvas.getContext('2d');
+        
+        // 设置报告canvas尺寸 (A4比例，高分辨率)
+        const reportWidth = 1200;
+        const chartWidth = 580;
+        const chartHeight = 400;
+        const padding = 20;
+        const headerHeight = 120;
+        const summaryHeight = 300; // 增加高度以容纳分析洞察
+        const chartTitleHeight = 35; // 图表标题的高度空间
+        
+        // 计算需要的行数（每行2个图表）
+        const chartsPerRow = 2;
+        const chartRows = Math.ceil(visibleCharts.length / chartsPerRow);
+        const chartAreaHeight = chartRows * (chartHeight + chartTitleHeight + padding) + padding;
+        
+        const reportHeight = headerHeight + chartAreaHeight + summaryHeight + padding * 3;
+        reportCanvas.width = reportWidth;
+        reportCanvas.height = reportHeight;
+        
+        // 设置背景色
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, reportWidth, reportHeight);
+        
+        // 绘制报告头部
+        this.drawReportHeader(ctx, reportWidth, headerHeight);
+        
+        let currentY = headerHeight + padding;
+        
+        // 绘制图表
+        const chartPromises = visibleCharts.map((chartKey, index) => {
+            return new Promise((resolve) => {
                 const canvas = document.getElementById(`${chartKey}ChartCanvas`);
-                if (canvas) {
-                    const link = document.createElement('a');
+                if (canvas && canvas.width > 0 && canvas.height > 0) {
+                    const row = Math.floor(index / chartsPerRow);
+                    const col = index % chartsPerRow;
+                    
+                    const x = padding + col * (chartWidth + padding);
+                    const y = currentY + row * (chartHeight + chartTitleHeight + padding);
+                    
+                    // 绘制图表标题
                     const chartNames = {
                         bar: '成绩分布柱状图',
                         line: '成绩趋势折线图',
                         pie: '等级分布饼图',
-                        radar: '综合能力雷达图'
+                        radar: '综合能力雷达图',
+                        scatter: '科目相关性矩阵图',
+                        box: '分数分布箱线图',
+                        stackedBar: '成绩等级堆积柱状图',
+                        heatmap: '成绩矩阵热力图'
                     };
-                    link.download = `${chartNames[chartKey] || '图表'}_${new Date().toISOString().split('T')[0]}.png`;
-                    link.href = canvas.toDataURL();
-                    link.click();
+                    
+                    ctx.fillStyle = '#2c3e50';
+                    ctx.font = 'bold 16px Arial';
+                    ctx.fillText(chartNames[chartKey] || '图表', x, y + 20);
+                    
+                    // 绘制图表（在标题下方留出足够空间）
+                    ctx.drawImage(canvas, x, y + chartTitleHeight, chartWidth, chartHeight);
                 }
-            }, index * 500);
+                resolve();
+            });
         });
-
-        this.showToast(`正在保存 ${visibleCharts.length} 个图表...`, 'info');
+        
+        // 等待所有图表绘制完成，然后添加统计摘要
+        Promise.all(chartPromises).then(() => {
+            const summaryY = currentY + chartAreaHeight;
+            this.drawSummarySection(ctx, reportWidth, summaryY, summaryHeight);
+            
+            // 保存报告
+            this.saveReportImage(reportCanvas);
+        });
+    }
+    
+    // 绘制报告头部
+    drawReportHeader(ctx, width, height) {
+        // 设置渐变背景
+        const gradient = ctx.createLinearGradient(0, 0, width, height);
+        gradient.addColorStop(0, '#667eea');
+        gradient.addColorStop(1, '#764ba2');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, width, height);
+        
+        // 绘制标题
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 32px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('📊 成绩分析报告', width / 2, 45);
+        
+        // 绘制基本信息
+        const studentCount = this.data.length;
+        const subjectCount = this.subjects.length;
+        const allScores = this.getAllScores();
+        const averageScore = (allScores.reduce((a, b) => a + b, 0) / allScores.length).toFixed(1);
+        const currentDate = new Date().toLocaleDateString('zh-CN');
+        
+        ctx.font = '18px Arial';
+        ctx.fillText(`学生人数: ${studentCount}名 | 科目数量: ${subjectCount}个 | 平均分: ${averageScore}分`, width / 2, 75);
+        ctx.font = '14px Arial';
+        ctx.fillText(`生成时间: ${currentDate}`, width / 2, 95);
+        
+        ctx.textAlign = 'left'; // 重置文本对齐
+    }
+    
+    // 绘制统计摘要部分
+    drawSummarySection(ctx, width, startY, height) {
+        // 绘制摘要背景
+        ctx.fillStyle = '#f8f9fa';
+        ctx.fillRect(10, startY, width - 20, height - 10);
+        
+        // 绘制边框
+        ctx.strokeStyle = '#dee2e6';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(10, startY, width - 20, height - 10);
+        
+        // 绘制摘要标题
+        ctx.fillStyle = '#2c3e50';
+        ctx.font = 'bold 20px Arial';
+        ctx.fillText('📈 统计摘要', 30, startY + 30);
+        
+        // 绘制分隔线
+        ctx.strokeStyle = '#dee2e6';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(30, startY + 40);
+        ctx.lineTo(width - 30, startY + 40);
+        ctx.stroke();
+        
+        // 获取统计数据
+        try {
+            const dataProcessor = new DataProcessor(this.data);
+            const summary = dataProcessor.generateSummary();
+            
+            // 绘制统计信息 - 使用更好的布局
+            const items = Object.keys(summary);
+            const itemsPerRow = 4;
+            const itemWidth = (width - 80) / itemsPerRow;
+            
+            ctx.font = '13px Arial';
+            items.forEach((key, index) => {
+                const row = Math.floor(index / itemsPerRow);
+                const col = index % itemsPerRow;
+                const x = 40 + col * itemWidth;
+                const y = startY + 70 + row * 45; // 增加行间距
+                
+                // 绘制小的背景框
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(x - 5, y - 20, itemWidth - 10, 38); // 稍微增加框高
+                ctx.strokeStyle = '#e9ecef';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(x - 5, y - 20, itemWidth - 10, 38);
+                
+                // 绘制标签
+                ctx.fillStyle = '#6c757d';
+                ctx.font = '12px Arial';
+                ctx.fillText(summary[key].label, x, y - 8);
+                
+                // 绘制数值
+                ctx.fillStyle = '#007bff';
+                ctx.font = 'bold 14px Arial';
+                const value = summary[key].value.toString();
+                const maxWidth = itemWidth - 20;
+                if (ctx.measureText(value).width > maxWidth) {
+                    ctx.font = 'bold 12px Arial';
+                }
+                ctx.fillText(value.length > 15 ? value.substring(0, 12) + '...' : value, x, y + 8);
+            });
+            
+            // 添加额外的分析信息
+            this.drawAdditionalStats(ctx, width, startY + 180);
+            
+        } catch (error) {
+            console.error('生成统计摘要时出错:', error);
+            ctx.fillStyle = '#dc3545';
+            ctx.font = '16px Arial';
+            ctx.fillText('统计摘要生成失败', 30, startY + 60);
+        }
+    }
+    
+    // 绘制额外的统计信息
+    drawAdditionalStats(ctx, width, startY) {
+        // 绘制分析建议标题
+        ctx.fillStyle = '#495057';
+        ctx.font = 'bold 14px Arial';
+        ctx.fillText('💡 分析洞察', 40, startY);
+        
+        // 分析数据并生成洞察
+        const allScores = this.getAllScores();
+        const maxScore = Math.max(...allScores);
+        const minScore = Math.min(...allScores);
+        const averageScore = (allScores.reduce((a, b) => a + b, 0) / allScores.length).toFixed(1);
+        
+        // 找出最佳和最弱科目
+        const subjectAvgs = this.subjects.map(subject => {
+            const scores = this.data.map(student => student[subject]);
+            return {
+                subject,
+                avg: (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1)
+            };
+        });
+        
+        const bestSubject = subjectAvgs.reduce((a, b) => parseFloat(a.avg) > parseFloat(b.avg) ? a : b);
+        const weakestSubject = subjectAvgs.reduce((a, b) => parseFloat(a.avg) < parseFloat(b.avg) ? a : b);
+        
+        const insights = [
+            `最优科目: ${bestSubject.subject} (平均${bestSubject.avg}分)`,
+            `待提升科目: ${weakestSubject.subject} (平均${weakestSubject.avg}分)`,
+            `分数跨度: ${minScore}分 - ${maxScore}分 (差距${maxScore - minScore}分)`,
+            `班级整体水平: ${averageScore >= 80 ? '优秀' : averageScore >= 70 ? '良好' : averageScore >= 60 ? '及格' : '需要提升'}`
+        ];
+        
+        ctx.fillStyle = '#6c757d';
+        ctx.font = '12px Arial';
+        insights.forEach((insight, index) => {
+            ctx.fillText(`• ${insight}`, 50, startY + 20 + index * 16);
+        });
+    }
+    
+    // 保存报告图片
+    saveReportImage(canvas) {
+        try {
+            const link = document.createElement('a');
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
+            link.download = `成绩分析报告_${timestamp}.png`;
+            link.href = canvas.toDataURL('image/png', 1.0);
+            
+            // 触发下载
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            this.showToast('完整分析报告已保存！', 'success');
+        } catch (error) {
+            console.error('保存报告失败:', error);
+            this.showToast('保存报告失败，请重试', 'error');
+        }
     }
 
     // 显示提示消息
@@ -1049,6 +1367,16 @@ class GradeAnalyzer {
         this.generateDynamicForm();
         
         this.showToast(`科目"${removedSubject}"已删除`, 'info');
+    }
+
+    // 新增：显示分析选项模态框
+    showAnalysisOptionsModal() {
+        document.getElementById('analysisOptionsModal').style.display = 'flex';
+    }
+
+    // 新增：隐藏分析选项模态框
+    hideAnalysisOptionsModal() {
+        document.getElementById('analysisOptionsModal').style.display = 'none';
     }
 }
 

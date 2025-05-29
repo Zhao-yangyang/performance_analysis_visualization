@@ -105,62 +105,13 @@
                 </div>
             </section>
 
-            <!-- 分析选项区域 -->
-            <section class="analysis-options-section" id="analysisOptionsSection" style="display: none;">
-                <div class="card">
-                    <h2>⚙️ 分析选项</h2>
-                    <div class="options-grid">
-                        <div class="option-group">
-                            <h3>图表类型</h3>
-                            <div class="checkbox-group">
-                                <label class="checkbox-label">
-                                    <input type="checkbox" id="barChart" checked>
-                                    <span>柱状图 - 成绩分布</span>
-                                </label>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" id="lineChart" checked>
-                                    <span>折线图 - 趋势分析</span>
-                                </label>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" id="pieChart" checked>
-                                    <span>饼图 - 等级分布</span>
-                                </label>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" id="radarChart" checked>
-                                    <span>雷达图 - 综合能力</span>
-                                </label>
-                            </div>
-                        </div>
-                        
-                        <div class="option-group">
-                            <h3>分析维度</h3>
-                            <div class="checkbox-group">
-                                <label class="checkbox-label">
-                                    <input type="checkbox" id="bySubject" checked>
-                                    <span>按科目分析</span>
-                                </label>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" id="byStudent" checked>
-                                    <span>按学生分析</span>
-                                </label>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" id="byGrade" checked>
-                                    <span>按等级分析</span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                    <button id="generateChartsBtn" class="btn btn-primary btn-large">生成图表</button>
-                </div>
-            </section>
-
             <!-- 图表展示区域 -->
             <section class="charts-section" id="chartsSection" style="display: none;">
                 <div class="charts-header">
                     <h2>📈 数据分析结果</h2>
                     <div class="chart-controls">
                         <button id="refreshChartsBtn" class="btn btn-primary">🔄 刷新图表</button>
-                        <button id="saveImageBtn" class="btn btn-secondary">💾 保存图片</button>
+                        <button id="saveImageBtn" class="btn btn-secondary">📄 保存报告</button>
                         <button id="printBtn" class="btn btn-secondary">🖨️ 打印图表</button>
                     </div>
                 </div>
@@ -196,6 +147,38 @@
                         <h3>综合能力 - 雷达图</h3>
                         <div class="chart-canvas-wrapper">
                             <canvas id="radarChartCanvas"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- 科目相关性散点图 -->
+                    <div class="chart-card" id="scatterChartCard">
+                        <h3>科目相关性 - 矩阵分析</h3>
+                        <div class="chart-canvas-wrapper">
+                            <canvas id="scatterChartCanvas"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- 分数分布箱线图 -->
+                    <div class="chart-card" id="boxChartCard">
+                        <h3>分数分布 - 箱线图</h3>
+                        <div class="chart-canvas-wrapper">
+                            <canvas id="boxChartCanvas"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- 班级对比堆积柱状图 -->
+                    <div class="chart-card" id="stackedBarChartCard">
+                        <h3>班级对比 - 堆积柱状图</h3>
+                        <div class="chart-canvas-wrapper">
+                            <canvas id="stackedBarChartCanvas"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- 成绩矩阵热力图 -->
+                    <div class="chart-card" id="heatmapChartCard">
+                        <h3>成绩矩阵 - 热力图</h3>
+                        <div class="chart-canvas-wrapper">
+                            <canvas id="heatmapChartCanvas"></canvas>
                         </div>
                     </div>
                 </div>
@@ -243,6 +226,98 @@
                         <div class="modal-actions">
                             <button id="addStudentBtn" class="btn btn-primary">添加学生</button>
                             <button id="finishInputBtn" class="btn btn-secondary">完成输入</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 分析选项模态框 -->
+            <div id="analysisOptionsModal" class="modal" style="display: none;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>⚙️ 分析选项</h3>
+                        <button class="modal-close" id="closeAnalysisModal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="options-grid">
+                            <div class="option-group">
+                                <h3>图表类型</h3>
+                                <div class="checkbox-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="barChart" checked>
+                                        <span>柱状图 - 成绩分布</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="lineChart" checked>
+                                        <span>折线图 - 趋势分析</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="pieChart" checked>
+                                        <span>饼图 - 等级分布</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="radarChart" checked>
+                                        <span>雷达图 - 综合能力</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="scatterChart">
+                                        <span>相关性分析 - 科目关联度矩阵</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="boxChart">
+                                        <span>箱线图 - 分数分布</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="stackedBarChart">
+                                        <span>堆积柱状图 - 班级对比</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="heatmapChart">
+                                        <span>热力图 - 成绩矩阵</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="option-group">
+                                <h3>分析维度</h3>
+                                <div class="checkbox-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="bySubject" checked>
+                                        <span>按科目分析</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="byStudent" checked>
+                                        <span>按学生分析</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="byGrade" checked>
+                                        <span>按等级分析</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="byScoreRange">
+                                        <span>按分数段分析</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="byRanking">
+                                        <span>按排名分析</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="byStrengthSubject">
+                                        <span>按优势科目分析</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="byProgress">
+                                        <span>按进步情况分析</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="byStability">
+                                        <span>按成绩稳定性分析</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-actions">
+                            <button id="generateChartsBtn" class="btn btn-primary btn-large">生成图表</button>
                         </div>
                     </div>
                 </div>
