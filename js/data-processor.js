@@ -118,10 +118,18 @@ class DataProcessor {
             const total = this.subjects.reduce((sum, subject) => sum + student[subject], 0);
             const average = (total / this.subjects.length).toFixed(1);
             
+            // 计算每个科目的等级
+            const subjectGrades = {};
+            this.subjects.forEach(subject => {
+                const score = student[subject];
+                subjectGrades[subject] = this.getGradeLevel(score);
+            });
+            
             return {
                 name: studentName,
                 total: total,
                 average: parseFloat(average),
+                subjectGrades: subjectGrades,
                 ...student
             };
         });
@@ -129,12 +137,220 @@ class DataProcessor {
         // 按总分排序
         studentsWithTotals.sort((a, b) => b.total - a.total);
 
-        // 添加排名
+        // 添加排名和奖牌
         studentsWithTotals.forEach((student, index) => {
             student.rank = index + 1;
+            if (index === 0) student.medal = '🥇';
+            else if (index === 1) student.medal = '🥈';
+            else if (index === 2) student.medal = '🥉';
         });
 
         return studentsWithTotals;
+    }
+
+    // 获取成绩等级
+    getGradeLevel(score) {
+        if (score >= 90) return 'A';
+        else if (score >= 80) return 'B';
+        else if (score >= 70) return 'C';
+        else if (score >= 60) return 'D';
+        else return 'F';
+    }
+
+    // 计算各科目详细统计（新增方法）
+    calculateSubjectDetailedStats() {
+        const subjectStats = {};
+        
+        this.subjects.forEach(subject => {
+            const scores = this.data.map(student => student[subject]);
+            const totalStudents = scores.length;
+            
+            // 基本统计
+            const min = Math.min(...scores);
+            const max = Math.max(...scores);
+            const sum = scores.reduce((a, b) => a + b, 0);
+            const average = (sum / totalStudents).toFixed(2);
+            
+            // 各等级人数统计
+            let excellent = 0; // 优秀(90-100)
+            let good = 0;      // 良好(80-89)
+            let pass = 0;      // 及格(60-79)
+            let fail = 0;      // 不及格(<60)
+            
+            scores.forEach(score => {
+                if (score >= 90) excellent++;
+                else if (score >= 80) good++;
+                else if (score >= 60) pass++;
+                else fail++;
+            });
+            
+            // 计算各等级率
+            const excellentRate = ((excellent / totalStudents) * 100).toFixed(1);
+            const goodRate = ((good / totalStudents) * 100).toFixed(1);
+            const passRate = (((excellent + good + pass) / totalStudents) * 100).toFixed(1);
+            const failRate = ((fail / totalStudents) * 100).toFixed(1);
+            
+            // 找出该科目的最高分和最低分学生
+            const maxScoreStudent = this.data.find(student => student[subject] === max);
+            const minScoreStudent = this.data.find(student => student[subject] === min);
+            
+            subjectStats[subject] = {
+                min: min,
+                max: max,
+                average: parseFloat(average),
+                totalStudents: totalStudents,
+                excellent: {
+                    count: excellent,
+                    rate: parseFloat(excellentRate)
+                },
+                good: {
+                    count: good,
+                    rate: parseFloat(goodRate)
+                },
+                pass: {
+                    count: pass,
+                    rate: parseFloat(passRate)
+                },
+                fail: {
+                    count: fail,
+                    rate: parseFloat(failRate)
+                },
+                passRate: parseFloat(passRate), // 总及格率
+                maxScoreStudent: maxScoreStudent['姓名'] || maxScoreStudent['name'] || maxScoreStudent['学生姓名'],
+                minScoreStudent: minScoreStudent['姓名'] || minScoreStudent['name'] || minScoreStudent['学生姓名'],
+                standardDeviation: this.calculateStandardDeviation(scores),
+                median: this.calculateMedian(scores)
+            };
+        });
+        
+        return subjectStats;
+    }
+
+    // 生成科目排名（新增方法）
+    generateSubjectRankings() {
+        const subjectRankings = {};
+        
+        this.subjects.forEach(subject => {
+            const studentsWithScores = this.data.map(student => {
+                const studentName = student['姓名'] || student['name'] || student['学生姓名'];
+                return {
+                    name: studentName,
+                    score: student[subject],
+                    grade: this.getGradeLevel(student[subject])
+                };
+            });
+            
+            // 按该科目分数排序
+            studentsWithScores.sort((a, b) => b.score - a.score);
+            
+            // 添加排名和奖牌
+            studentsWithScores.forEach((student, index) => {
+                student.rank = index + 1;
+                if (index === 0) student.medal = '🥇';
+                else if (index === 1) student.medal = '🥈';
+                else if (index === 2) student.medal = '🥉';
+            });
+            
+            subjectRankings[subject] = studentsWithScores;
+        });
+        
+        return subjectRankings;
+    }
+
+    // 生成学生个人详细报告（新增方法）
+    generateStudentDetailedReport() {
+        const rankings = this.calculateStudentRankings();
+        const subjectStats = this.calculateSubjectDetailedStats();
+        
+        const detailedReports = rankings.map(student => {
+            const subjectPerformance = {};
+            
+            this.subjects.forEach(subject => {
+                const score = student[subject];
+                const subjectAvg = subjectStats[subject].average;
+                const percentile = this.calculatePercentile(score, subject);
+                
+                subjectPerformance[subject] = {
+                    score: score,
+                    grade: this.getGradeLevel(score),
+                    percentile: percentile,
+                    aboveAverage: score > subjectAvg,
+                    difference: (score - subjectAvg).toFixed(1),
+                    rank: this.getSubjectRank(student.name, subject)
+                };
+            });
+            
+            return {
+                ...student,
+                subjectPerformance: subjectPerformance,
+                strengths: this.getStudentStrengths(student),
+                weaknesses: this.getStudentWeaknesses(student),
+                recommendedFocus: this.getRecommendedFocus(student)
+            };
+        });
+        
+        return detailedReports;
+    }
+
+    // 获取学生在某科目的排名
+    getSubjectRank(studentName, subject) {
+        const subjectRankings = this.generateSubjectRankings();
+        const studentRank = subjectRankings[subject].find(s => s.name === studentName);
+        return studentRank ? studentRank.rank : null;
+    }
+
+    // 获取学生优势科目
+    getStudentStrengths(student) {
+        const strengths = [];
+        this.subjects.forEach(subject => {
+            const score = student[subject];
+            if (score >= 85) {
+                strengths.push({
+                    subject: subject,
+                    score: score,
+                    grade: this.getGradeLevel(score)
+                });
+            }
+        });
+        return strengths.sort((a, b) => b.score - a.score);
+    }
+
+    // 获取学生薄弱科目
+    getStudentWeaknesses(student) {
+        const weaknesses = [];
+        this.subjects.forEach(subject => {
+            const score = student[subject];
+            if (score < 70) {
+                weaknesses.push({
+                    subject: subject,
+                    score: score,
+                    grade: this.getGradeLevel(score)
+                });
+            }
+        });
+        return weaknesses.sort((a, b) => a.score - b.score);
+    }
+
+    // 获取推荐关注点
+    getRecommendedFocus(student) {
+        const recommendations = [];
+        const weaknesses = this.getStudentWeaknesses(student);
+        
+        if (weaknesses.length > 0) {
+            recommendations.push(`建议重点关注：${weaknesses.map(w => w.subject).join('、')}`);
+        }
+        
+        if (student.average >= 90) {
+            recommendations.push('整体表现优异，保持当前学习状态');
+        } else if (student.average >= 80) {
+            recommendations.push('成绩良好，可适当提高薄弱科目');
+        } else if (student.average >= 60) {
+            recommendations.push('需要加强基础知识学习');
+        } else {
+            recommendations.push('需要全面提升各科成绩');
+        }
+        
+        return recommendations;
     }
 
     // 分析学科相关性

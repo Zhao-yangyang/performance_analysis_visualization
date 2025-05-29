@@ -123,6 +123,38 @@
                 
                 <!-- 图表网格 -->
                 <div class="charts-grid">
+                    <!-- 学生排名图表 -->
+                    <div class="chart-card" id="studentRankingCard">
+                        <h3>🏆 学生总分排名榜</h3>
+                        <div class="chart-canvas-wrapper">
+                            <canvas id="studentRankingCanvas"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- 科目详细统计图表 -->
+                    <div class="chart-card" id="subjectStatsCard">
+                        <h3>📊 各科目统计分析</h3>
+                        <div class="chart-canvas-wrapper">
+                            <canvas id="subjectStatsCanvas"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- 等级分布统计图表 -->
+                    <div class="chart-card" id="gradeDistributionCard">
+                        <h3>📈 各科目等级分布</h3>
+                        <div class="chart-canvas-wrapper">
+                            <canvas id="gradeDistributionCanvas"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- 及格率对比图表 -->
+                    <div class="chart-card" id="passRateCard">
+                        <h3>🎯 各科目及格率</h3>
+                        <div class="chart-canvas-wrapper">
+                            <canvas id="passRateCanvas"></canvas>
+                        </div>
+                    </div>
+
                     <!-- 成绩分布柱状图 -->
                     <div class="chart-card" id="barChartCard">
                         <h3>成绩分布 - 柱状图</h3>
@@ -248,6 +280,22 @@
                             <div class="option-group">
                                 <h3>图表类型</h3>
                                 <div class="checkbox-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="studentRanking" checked>
+                                        <span>🏆 学生总分排名榜</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="subjectStats" checked>
+                                        <span>📊 各科目统计分析</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="gradeDistribution" checked>
+                                        <span>📈 各科目等级分布</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="passRate" checked>
+                                        <span>🎯 各科目及格率</span>
+                                    </label>
                                     <label class="checkbox-label">
                                         <input type="checkbox" id="barChart" checked>
                                         <span>柱状图 - 成绩分布</span>

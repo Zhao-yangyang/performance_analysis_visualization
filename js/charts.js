@@ -823,4 +823,482 @@ class ChartManager {
             }
         });
     }
+
+    // 创建学生排名图表（新增）
+    createStudentRankingChart(canvasId) {
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        const processor = new DataProcessor(this.data);
+        const rankings = processor.calculateStudentRankings();
+        
+        // 取前10名学生
+        const top10Students = rankings.slice(0, 10);
+        
+        const labels = top10Students.map(student => {
+            const medal = student.medal || '';
+            return `${medal} ${student.name}`;
+        });
+        
+        const scores = top10Students.map(student => student.total);
+        const averages = top10Students.map(student => student.average);
+        
+        // 为前三名使用特殊颜色
+        const backgroundColors = top10Students.map((student, index) => {
+            if (index === 0) return '#FFD700'; // 金色
+            if (index === 1) return '#C0C0C0'; // 银色  
+            if (index === 2) return '#CD7F32'; // 铜色
+            return this.colors.primary[index % this.colors.primary.length];
+        });
+
+        return new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '总分',
+                    data: scores,
+                    backgroundColor: backgroundColors,
+                    borderColor: backgroundColors.map(color => color + 'CC'),
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    borderSkipped: false,
+                }, {
+                    label: '平均分',
+                    data: averages,
+                    type: 'line',
+                    borderColor: '#e74c3c',
+                    backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                    borderWidth: 3,
+                    fill: false,
+                    tension: 0.4,
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
+                    pointBackgroundColor: '#e74c3c',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    yAxisID: 'y1'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '🏆 学生排名榜 (前10名)',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        }
+                    },
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 15
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: '总分'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: '平均分'
+                        },
+                        grid: {
+                            drawOnChartArea: false,
+                        },
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: '学生姓名'
+                        },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 0
+                        }
+                    }
+                },
+                animation: {
+                    duration: 2000,
+                    easing: 'easeInOutBounce'
+                }
+            }
+        });
+    }
+
+    // 创建科目详细统计图表（新增）
+    createSubjectStatsChart(canvasId) {
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        const processor = new DataProcessor(this.data);
+        const subjectStats = processor.calculateSubjectDetailedStats();
+        
+        const labels = this.subjects;
+        const averages = this.subjects.map(subject => subjectStats[subject].average);
+        const maxScores = this.subjects.map(subject => subjectStats[subject].max);
+        const minScores = this.subjects.map(subject => subjectStats[subject].min);
+
+        return new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: '平均分',
+                        data: averages,
+                        borderColor: '#3498db',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 6,
+                        pointHoverRadius: 8,
+                        pointBackgroundColor: '#3498db',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2
+                    },
+                    {
+                        label: '最高分',
+                        data: maxScores,
+                        borderColor: '#e74c3c',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: '#e74c3c',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2
+                    },
+                    {
+                        label: '最低分',
+                        data: minScores,
+                        borderColor: '#f39c12',
+                        backgroundColor: 'rgba(243, 156, 18, 0.1)',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: '#f39c12',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '📊 各科目成绩统计',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        }
+                    },
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 15
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        title: {
+                            display: true,
+                            text: '分数'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: '科目'
+                        }
+                    }
+                },
+                animation: {
+                    duration: 2000,
+                    easing: 'easeInOutQuart'
+                }
+            }
+        });
+    }
+
+    // 创建等级分布图表（新增）
+    createGradeDistributionChart(canvasId) {
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        const processor = new DataProcessor(this.data);
+        const subjectStats = processor.calculateSubjectDetailedStats();
+        
+        const labels = this.subjects;
+        const excellentData = this.subjects.map(subject => subjectStats[subject].excellent.count);
+        const goodData = this.subjects.map(subject => subjectStats[subject].good.count);
+        const passData = this.subjects.map(subject => subjectStats[subject].pass.count);
+        const failData = this.subjects.map(subject => subjectStats[subject].fail.count);
+
+        return new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: '优秀 (90-100分)',
+                        data: excellentData,
+                        backgroundColor: '#2ecc71',
+                        borderColor: '#27ae60',
+                        borderWidth: 1
+                    },
+                    {
+                        label: '良好 (80-89分)',
+                        data: goodData,
+                        backgroundColor: '#3498db',
+                        borderColor: '#2980b9',
+                        borderWidth: 1
+                    },
+                    {
+                        label: '及格 (60-79分)',
+                        data: passData,
+                        backgroundColor: '#f39c12',
+                        borderColor: '#e67e22',
+                        borderWidth: 1
+                    },
+                    {
+                        label: '不及格 (<60分)',
+                        data: failData,
+                        backgroundColor: '#e74c3c',
+                        borderColor: '#c0392b',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '📈 各科目等级分布统计',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        }
+                    },
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 15
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        stacked: true,
+                        title: {
+                            display: true,
+                            text: '科目'
+                        }
+                    },
+                    y: {
+                        stacked: true,
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: '人数'
+                        }
+                    }
+                },
+                animation: {
+                    duration: 2000,
+                    easing: 'easeInOutCubic'
+                }
+            }
+        });
+    }
+
+    // 创建及格率对比图表（新增）
+    createPassRateChart(canvasId) {
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        const processor = new DataProcessor(this.data);
+        const subjectStats = processor.calculateSubjectDetailedStats();
+        
+        const labels = this.subjects;
+        const excellentRates = this.subjects.map(subject => subjectStats[subject].excellent.rate);
+        const goodRates = this.subjects.map(subject => subjectStats[subject].good.rate);
+        const passRates = this.subjects.map(subject => subjectStats[subject].passRate);
+        const failRates = this.subjects.map(subject => subjectStats[subject].fail.rate);
+
+        return new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '及格率',
+                    data: passRates,
+                    backgroundColor: [
+                        '#FF6384',
+                        '#36A2EB', 
+                        '#FFCE56',
+                        '#4BC0C0',
+                        '#9966FF',
+                        '#FF9F40'
+                    ],
+                    borderColor: '#fff',
+                    borderWidth: 3,
+                    hoverBorderWidth: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '🎯 各科目及格率对比',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        }
+                    },
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 15,
+                            generateLabels: function(chart) {
+                                const data = chart.data;
+                                if (data.labels.length && data.datasets.length) {
+                                    return data.labels.map((label, i) => {
+                                        const dataset = data.datasets[0];
+                                        const rate = dataset.data[i];
+                                        return {
+                                            text: `${label}: ${rate}%`,
+                                            fillStyle: dataset.backgroundColor[i],
+                                            strokeStyle: dataset.borderColor,
+                                            lineWidth: dataset.borderWidth,
+                                            pointStyle: 'circle',
+                                            hidden: false,
+                                            index: i
+                                        };
+                                    });
+                                }
+                                return [];
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed;
+                                return `${label}: ${value}%`;
+                            }
+                        }
+                    }
+                },
+                animation: {
+                    duration: 2000,
+                    easing: 'easeInOutBack'
+                }
+            }
+        });
+    }
+
+    // 创建科目排名表格图表（新增）
+    createSubjectRankingChart(canvasId, subject) {
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        const processor = new DataProcessor(this.data);
+        const subjectRankings = processor.generateSubjectRankings();
+        const rankings = subjectRankings[subject] || [];
+        
+        // 取前10名
+        const top10 = rankings.slice(0, 10);
+        
+        const labels = top10.map(student => {
+            const medal = student.medal || '';
+            return `${medal} ${student.name}`;
+        });
+        
+        const scores = top10.map(student => student.score);
+        
+        // 为前三名使用特殊颜色
+        const backgroundColors = top10.map((student, index) => {
+            if (index === 0) return '#FFD700'; // 金色
+            if (index === 1) return '#C0C0C0'; // 银色  
+            if (index === 2) return '#CD7F32'; // 铜色
+            return this.colors.primary[index % this.colors.primary.length];
+        });
+
+        return new Chart(ctx, {
+            type: 'horizontalBar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: `${subject}成绩`,
+                    data: scores,
+                    backgroundColor: backgroundColors,
+                    borderColor: backgroundColors.map(color => color + 'CC'),
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    borderSkipped: false,
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: `🏆 ${subject} - 学生排名榜 (前10名)`,
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        }
+                    },
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        max: 100,
+                        title: {
+                            display: true,
+                            text: '分数'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: '学生'
+                        }
+                    }
+                },
+                animation: {
+                    duration: 2000,
+                    easing: 'easeInOutBounce'
+                }
+            }
+        });
+    }
 } 

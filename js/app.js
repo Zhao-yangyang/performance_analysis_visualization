@@ -437,9 +437,38 @@ class GradeAnalyzer {
         thead.innerHTML = '';
         tbody.innerHTML = '';
 
+        // 计算每个学生的总分和平均分，并按总分排序
+        const studentsWithScores = this.data.map((student, originalIndex) => {
+            const headers = Object.keys(student);
+            let total = 0;
+            let subjectCount = 0;
+
+            headers.forEach(header => {
+                if (!['姓名', 'name', '学生姓名', 'Name', 'NAME', '学生'].includes(header)) {
+                    total += parseFloat(student[header]) || 0;
+                    subjectCount++;
+                }
+            });
+
+            return {
+                ...student,
+                originalIndex,
+                total,
+                average: subjectCount > 0 ? (total / subjectCount).toFixed(1) : 'N/A'
+            };
+        }).sort((a, b) => b.total - a.total); // 按总分从高到低排序
+
         // 生成表头
         const headers = Object.keys(this.data[0]);
         const headerRow = document.createElement('tr');
+        
+        // 添加排名列
+        const rankTh = document.createElement('th');
+        rankTh.textContent = '排名';
+        rankTh.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+        rankTh.style.color = 'white';
+        headerRow.appendChild(rankTh);
+        
         headers.forEach(header => {
             const th = document.createElement('th');
             th.textContent = header;
@@ -456,31 +485,50 @@ class GradeAnalyzer {
         thead.appendChild(headerRow);
 
         // 生成表格内容
-        this.data.forEach((student, index) => {
+        studentsWithScores.forEach((student, index) => {
             const row = document.createElement('tr');
-            let total = 0;
-            let subjectCount = 0;
+            const rank = index + 1;
+            
+            // 为前三名添加特殊样式
+            if (rank === 1) {
+                row.classList.add('rank-first');
+                row.setAttribute('title', '🥇 第一名');
+            } else if (rank === 2) {
+                row.classList.add('rank-second');
+                row.setAttribute('title', '🥈 第二名');
+            } else if (rank === 3) {
+                row.classList.add('rank-third');
+                row.setAttribute('title', '🥉 第三名');
+            }
+
+            // 添加排名列
+            const rankTd = document.createElement('td');
+            let rankContent = rank;
+            if (rank === 1) rankContent = '🥇 1';
+            else if (rank === 2) rankContent = '🥈 2';
+            else if (rank === 3) rankContent = '🥉 3';
+            
+            rankTd.innerHTML = `<span class="rank-number">${rankContent}</span>`;
+            rankTd.style.fontWeight = 'bold';
+            rankTd.style.textAlign = 'center';
+            row.appendChild(rankTd);
 
             headers.forEach(header => {
                 const td = document.createElement('td');
                 td.textContent = student[header];
-                if (!['姓名', 'name', '学生姓名', 'Name', 'NAME', '学生'].includes(header)) {
-                    total += parseFloat(student[header]) || 0;
-                    subjectCount++;
-                }
                 row.appendChild(td);
             });
 
             // 添加总分
             const totalTd = document.createElement('td');
-            totalTd.textContent = total;
+            totalTd.textContent = student.total;
             totalTd.style.fontWeight = 'bold';
             totalTd.style.color = '#667eea';
             row.appendChild(totalTd);
 
             // 添加平均分
             const avgTd = document.createElement('td');
-            avgTd.textContent = subjectCount > 0 ? (total / subjectCount).toFixed(1) : 'N/A';
+            avgTd.textContent = student.average;
             avgTd.style.fontWeight = 'bold';
             avgTd.style.color = '#764ba2';
             row.appendChild(avgTd);
@@ -489,8 +537,8 @@ class GradeAnalyzer {
             const actionTd = document.createElement('td');
             const editBtn = document.createElement('button');
             editBtn.textContent = '编辑';
-            editBtn.className = 'btn btn-secondary btn-small'; // 可能需要为btn-small添加样式
-            editBtn.addEventListener('click', () => this.startEditStudent(index));
+            editBtn.className = 'btn btn-secondary btn-small';
+            editBtn.addEventListener('click', () => this.startEditStudent(student.originalIndex));
             actionTd.appendChild(editBtn);
             row.appendChild(actionTd);
 
@@ -760,7 +808,11 @@ class GradeAnalyzer {
         const chartManager = new ChartManager(this.data);
         console.log('ChartManager已创建');
         
-        // 获取选中的图表类型
+        // 获取选中的图表类型（包含新增的图表）
+        const studentRanking = document.getElementById('studentRanking').checked;
+        const subjectStats = document.getElementById('subjectStats').checked;
+        const gradeDistribution = document.getElementById('gradeDistribution').checked;
+        const passRate = document.getElementById('passRate').checked;
         const barChart = document.getElementById('barChart').checked;
         const lineChart = document.getElementById('lineChart').checked;
         const pieChart = document.getElementById('pieChart').checked;
@@ -771,11 +823,16 @@ class GradeAnalyzer {
         const heatmapChart = document.getElementById('heatmapChart').checked;
 
         console.log('选中的图表类型:', {
+            studentRanking, subjectStats, gradeDistribution, passRate,
             barChart, lineChart, pieChart, radarChart, 
             scatterChart, boxChart, stackedBarChart, heatmapChart
         });
 
-        // 显示/隐藏图表卡片
+        // 显示/隐藏图表卡片（包含新增的图表）
+        document.getElementById('studentRankingCard').style.display = studentRanking ? 'block' : 'none';
+        document.getElementById('subjectStatsCard').style.display = subjectStats ? 'block' : 'none';
+        document.getElementById('gradeDistributionCard').style.display = gradeDistribution ? 'block' : 'none';
+        document.getElementById('passRateCard').style.display = passRate ? 'block' : 'none';
         document.getElementById('barChartCard').style.display = barChart ? 'block' : 'none';
         document.getElementById('lineChartCard').style.display = lineChart ? 'block' : 'none';
         document.getElementById('pieChartCard').style.display = pieChart ? 'block' : 'none';
@@ -785,7 +842,37 @@ class GradeAnalyzer {
         document.getElementById('stackedBarChartCard').style.display = stackedBarChart ? 'block' : 'none';
         document.getElementById('heatmapChartCard').style.display = heatmapChart ? 'block' : 'none';
 
-        // 生成选中的图表
+        // 生成新增的图表
+        if (studentRanking) {
+            console.log('创建学生排名图表...');
+            const canvas = document.getElementById('studentRankingCanvas');
+            console.log('学生排名图表canvas元素:', canvas);
+            this.charts.studentRanking = chartManager.createStudentRankingChart('studentRankingCanvas');
+            console.log('学生排名图表创建结果:', this.charts.studentRanking);
+        }
+        if (subjectStats) {
+            console.log('创建科目统计图表...');
+            const canvas = document.getElementById('subjectStatsCanvas');
+            console.log('科目统计图表canvas元素:', canvas);
+            this.charts.subjectStats = chartManager.createSubjectStatsChart('subjectStatsCanvas');
+            console.log('科目统计图表创建结果:', this.charts.subjectStats);
+        }
+        if (gradeDistribution) {
+            console.log('创建等级分布图表...');
+            const canvas = document.getElementById('gradeDistributionCanvas');
+            console.log('等级分布图表canvas元素:', canvas);
+            this.charts.gradeDistribution = chartManager.createGradeDistributionChart('gradeDistributionCanvas');
+            console.log('等级分布图表创建结果:', this.charts.gradeDistribution);
+        }
+        if (passRate) {
+            console.log('创建及格率图表...');
+            const canvas = document.getElementById('passRateCanvas');
+            console.log('及格率图表canvas元素:', canvas);
+            this.charts.passRate = chartManager.createPassRateChart('passRateCanvas');
+            console.log('及格率图表创建结果:', this.charts.passRate);
+        }
+
+        // 生成选中的原有图表
         if (barChart) {
             console.log('创建柱状图...');
             const canvas = document.getElementById('barChartCanvas');
@@ -847,21 +934,150 @@ class GradeAnalyzer {
     }
 
     generateSummary() {
-        const dataProcessor = new DataProcessor(this.data);
-        const summary = dataProcessor.generateSummary();
+        if (!this.data || this.data.length === 0) return '';
+
+        const processor = new DataProcessor(this.data);
+        const rankings = processor.calculateStudentRankings();
+        const subjectStats = processor.calculateSubjectDetailedStats();
+        const subjectRankings = processor.generateSubjectRankings();
         
         const summaryGrid = document.getElementById('summaryGrid');
+        if (!summaryGrid) return '';
+
+        // 清空现有内容
         summaryGrid.innerHTML = '';
 
-        Object.keys(summary).forEach(key => {
-            const item = document.createElement('div');
-            item.className = 'summary-item';
-            item.innerHTML = `
-                <h4>${summary[key].label}</h4>
-                <div class="value">${summary[key].value}</div>
-            `;
-            summaryGrid.appendChild(item);
+        // 1. 班级整体分析（放在最上面）
+        const totalStudents = this.data.length;
+        let excellentStudents = 0;
+        let goodStudents = 0;
+        let passStudents = 0;
+        let failStudents = 0;
+
+        this.data.forEach(student => {
+            const headers = Object.keys(student);
+            let total = 0;
+            let subjectCount = 0;
+
+            headers.forEach(header => {
+                if (!['姓名', 'name', '学生姓名', 'Name', 'NAME', '学生'].includes(header)) {
+                    total += parseFloat(student[header]) || 0;
+                    subjectCount++;
+                }
+            });
+
+            const average = subjectCount > 0 ? total / subjectCount : 0;
+            
+            if (average >= 90) excellentStudents++;
+            else if (average >= 80) goodStudents++;
+            else if (average >= 60) passStudents++;
+            else failStudents++;
         });
+
+        const classAnalysisDiv = document.createElement('div');
+        classAnalysisDiv.className = 'summary-item class-analysis';
+        classAnalysisDiv.innerHTML = `
+            <h4>🎯 班级整体分析</h4>
+            <div class="class-analysis-content">
+                <div class="class-grade-distribution">
+                    <div class="grade-item excellent">
+                        <div class="grade-label">优秀学生 (90分以上)</div>
+                        <div class="grade-count">${excellentStudents}人</div>
+                        <div class="grade-percentage">${((excellentStudents / totalStudents) * 100).toFixed(1)}%</div>
+                    </div>
+                    <div class="grade-item good">
+                        <div class="grade-label">良好学生 (80-89分)</div>
+                        <div class="grade-count">${goodStudents}人</div>
+                        <div class="grade-percentage">${((goodStudents / totalStudents) * 100).toFixed(1)}%</div>
+                    </div>
+                    <div class="grade-item pass">
+                        <div class="grade-label">及格学生 (60-79分)</div>
+                        <div class="grade-count">${passStudents}人</div>
+                        <div class="grade-percentage">${((passStudents / totalStudents) * 100).toFixed(1)}%</div>
+                    </div>
+                    <div class="grade-item fail">
+                        <div class="grade-label">待提高学生 (60分以下)</div>
+                        <div class="grade-count">${failStudents}人</div>
+                        <div class="grade-percentage">${((failStudents / totalStudents) * 100).toFixed(1)}%</div>
+                    </div>
+                </div>
+            </div>
+        `;
+        summaryGrid.appendChild(classAnalysisDiv);
+
+        // 2. 创建左右布局容器：各科第一名（左侧）
+        const topRowContainer = document.createElement('div');
+        topRowContainer.className = 'summary-row-container';
+        
+        const subjectTopDiv = document.createElement('div');
+        subjectTopDiv.className = 'summary-item subject-top-compact';
+        
+        let subjectTopList = '';
+        Object.keys(subjectRankings).forEach(subject => {
+            const topStudent = subjectRankings[subject][0];
+            subjectTopList += `
+                <div class="subject-top-item">
+                    <span class="subject">${subject}</span>
+                    <span class="top-student">${topStudent.name} (${topStudent.score}分)</span>
+                </div>
+            `;
+        });
+
+        subjectTopDiv.innerHTML = `
+            <h4>🏆 各科第一名</h4>
+            <div class="subject-top-list">
+                ${subjectTopList}
+            </div>
+        `;
+        
+        topRowContainer.appendChild(subjectTopDiv);
+        summaryGrid.appendChild(topRowContainer);
+
+        // 3. 各科目详细统计（修复字段名问题）
+        const subjectStatsDiv = document.createElement('div');
+        subjectStatsDiv.className = 'summary-item subject-stats';
+        
+        let subjectStatsGrid = '';
+        Object.keys(subjectStats).forEach(subject => {
+            const stats = subjectStats[subject];
+            subjectStatsGrid += `
+                <div class="subject-stat-item">
+                    <h5>${subject}</h5>
+                    <div class="stat-details">
+                        <div class="stat-row">
+                            <span class="stat-label">平均分：</span>
+                            <span class="stat-value avg-score">${stats.average}分</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">最高分：</span>
+                            <span class="stat-value max-score">${stats.max}分</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">最低分：</span>
+                            <span class="stat-value min-score">${stats.min}分</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">及格率：</span>
+                            <span class="stat-value pass-rate">${stats.passRate}%</span>
+                        </div>
+                    </div>
+                    <div class="grade-breakdown">
+                        <div class="grade excellent">优秀 ${stats.excellent.count}人 (${stats.excellent.rate}%)</div>
+                        <div class="grade good">良好 ${stats.good.count}人 (${stats.good.rate}%)</div>
+                        <div class="grade pass">及格 ${stats.pass.count}人 (${(((stats.pass.count) / stats.totalStudents) * 100).toFixed(1)}%)</div>
+                        <div class="grade fail">不及格 ${stats.fail.count}人 (${stats.fail.rate}%)</div>
+                    </div>
+                </div>
+            `;
+        });
+
+        subjectStatsDiv.innerHTML = `
+            <h4>📈 各科目详细统计</h4>
+            <div class="subject-stats-grid">
+                ${subjectStatsGrid}
+            </div>
+        `;
+        summaryGrid.appendChild(subjectStatsDiv);
     }
 
     printCharts() {
