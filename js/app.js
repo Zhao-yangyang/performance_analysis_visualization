@@ -11,6 +11,7 @@ class GradeAnalyzer {
 
     init() {
         this.bindEvents();
+        this.initDarkMode();
         this.showSection('data-input-section');
     }
 
@@ -99,6 +100,11 @@ class GradeAnalyzer {
                 this.hideManualInputModal();
                 this.hideAnalysisOptionsModal();
             }
+        });
+
+        // 暗黑模式切换
+        document.getElementById('themeToggle').addEventListener('click', () => {
+            this.toggleDarkMode();
         });
 
         // 文件拖拽事件
@@ -1377,6 +1383,92 @@ class GradeAnalyzer {
     // 新增：隐藏分析选项模态框
     hideAnalysisOptionsModal() {
         document.getElementById('analysisOptionsModal').style.display = 'none';
+    }
+
+    // 暗黑模式相关方法
+    initDarkMode() {
+        console.log('初始化暗黑模式...');
+        
+        // 从localStorage获取用户偏好，如果没有则检测系统偏好
+        const savedTheme = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        
+        console.log('保存的主题:', savedTheme);
+        console.log('系统偏好暗黑模式:', prefersDark);
+        
+        if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+            this.enableDarkMode();
+        } else {
+            this.disableDarkMode();
+        }
+        
+        // 监听系统主题变化
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+            console.log('系统主题变化:', e.matches);
+            if (!localStorage.getItem('theme')) {
+                if (e.matches) {
+                    this.enableDarkMode();
+                } else {
+                    this.disableDarkMode();
+                }
+            }
+        });
+    }
+
+    toggleDarkMode() {
+        console.log('切换暗黑模式，当前状态:', document.body.classList.contains('dark-mode'));
+        
+        if (document.body.classList.contains('dark-mode')) {
+            this.disableDarkMode();
+            localStorage.setItem('theme', 'light');
+            console.log('切换到浅色模式');
+        } else {
+            this.enableDarkMode();
+            localStorage.setItem('theme', 'dark');
+            console.log('切换到暗黑模式');
+        }
+    }
+
+    enableDarkMode() {
+        console.log('启用暗黑模式');
+        
+        // 移除浅色模式标识，添加暗黑模式标识
+        document.body.classList.remove('light-mode');
+        document.body.classList.add('dark-mode');
+        
+        const themeIcon = document.querySelector('.theme-icon');
+        if (themeIcon) {
+            themeIcon.textContent = '☀️';
+        }
+        
+        // 添加一个平滑的过渡效果
+        document.body.style.transition = 'background 0.3s ease, color 0.3s ease';
+        setTimeout(() => {
+            document.body.style.transition = '';
+        }, 300);
+        
+        console.log('暗黑模式已启用，body classes:', document.body.className);
+    }
+
+    disableDarkMode() {
+        console.log('禁用暗黑模式');
+        
+        // 移除暗黑模式标识，添加浅色模式标识
+        document.body.classList.remove('dark-mode');
+        document.body.classList.add('light-mode');
+        
+        const themeIcon = document.querySelector('.theme-icon');
+        if (themeIcon) {
+            themeIcon.textContent = '🌙';
+        }
+        
+        // 添加一个平滑的过渡效果
+        document.body.style.transition = 'background 0.3s ease, color 0.3s ease';
+        setTimeout(() => {
+            document.body.style.transition = '';
+        }, 300);
+        
+        console.log('暗黑模式已禁用，body classes:', document.body.className);
     }
 }
 
