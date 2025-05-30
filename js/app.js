@@ -6,12 +6,14 @@ class GradeAnalyzer {
         this.manualData = []; // 用于手动输入时暂存数据
         this.editingStudentIndex = null; // 新增：跟踪正在编辑的学生索引
         this.subjects = ['语文', '数学', '英语', '物理', '化学']; // 默认科目列表
+        this.currentGradeDetailData = null; // 存储当前等级详情数据
         this.init();
     }
 
     init() {
         this.bindEvents();
         this.initDarkMode();
+        this.initGradeDetailModal(); // 初始化等级详情模态框
         this.showSection('data-input-section');
     }
 
@@ -1062,10 +1064,10 @@ class GradeAnalyzer {
                         </div>
                     </div>
                     <div class="grade-breakdown">
-                        <div class="grade excellent">优秀 ${stats.excellent.count}人 (${stats.excellent.rate}%)</div>
-                        <div class="grade good">良好 ${stats.good.count}人 (${stats.good.rate}%)</div>
-                        <div class="grade pass">及格 ${stats.pass.count}人 (${(((stats.pass.count) / stats.totalStudents) * 100).toFixed(1)}%)</div>
-                        <div class="grade fail">不及格 ${stats.fail.count}人 (${stats.fail.rate}%)</div>
+                        <div class="grade excellent clickable-grade" data-subject="${subject}" data-grade="excellent">优秀 ${stats.excellent.count}人 (${stats.excellent.rate}%)</div>
+                        <div class="grade good clickable-grade" data-subject="${subject}" data-grade="good">良好 ${stats.good.count}人 (${stats.good.rate}%)</div>
+                        <div class="grade pass clickable-grade" data-subject="${subject}" data-grade="pass">及格 ${stats.pass.count}人 (${(((stats.pass.count) / stats.totalStudents) * 100).toFixed(1)}%)</div>
+                        <div class="grade fail clickable-grade" data-subject="${subject}" data-grade="fail">不及格 ${stats.fail.count}人 (${stats.fail.rate}%)</div>
                     </div>
                 </div>
             `;
@@ -1078,10 +1080,240 @@ class GradeAnalyzer {
             </div>
         `;
         summaryGrid.appendChild(subjectStatsDiv);
+        
+        // 添加等级点击事件监听器
+        this.setupGradeClickListeners();
+    }
+
+    // 设置等级点击事件监听器（新增方法）
+    setupGradeClickListeners() {
+        const gradeElements = document.querySelectorAll('.clickable-grade');
+        
+        gradeElements.forEach(element => {
+            element.addEventListener('click', (e) => {
+                const subject = e.target.getAttribute('data-subject');
+                const gradeType = e.target.getAttribute('data-grade');
+                
+                // 只有当该等级有学生时才显示弹窗
+                const gradeText = e.target.textContent;
+                const studentCount = parseInt(gradeText.match(/(\d+)人/)[1]);
+                
+                if (studentCount > 0) {
+                    this.showGradeDetailModal(subject, gradeType);
+                } else {
+                    this.showToast(`${subject}科目暂无该等级学生`, 'info');
+                }
+            });
+        });
+    }
+
+    // 显示等级详情模态框（新增方法）
+    showGradeDetailModal(subject, gradeType) {
+        const processor = new DataProcessor(this.data);
+        const students = processor.getSubjectGradeStudents(subject, gradeType);
+        
+        if (students.length === 0) {
+            this.showToast(`${subject}科目暂无该等级学生`, 'info');
+            return;
+        }
+
+        // 等级名称映射
+        const gradeNames = {
+            excellent: '优秀 (90-100分)',
+            good: '良好 (80-89分)',
+            pass: '及格 (60-79分)',
+            fail: '不及格 (60分以下)'
+        };
+
+        // 等级图标映射
+        const gradeIcons = {
+            excellent: '🏆',
+            good: '👏',
+            pass: '✅',
+            fail: '📈'
+        };
+
+        // 设置模态框标题
+        const modalTitle = document.getElementById('gradeDetailTitle');
+        modalTitle.textContent = `${gradeIcons[gradeType]} ${subject} - ${gradeNames[gradeType]}`;
+
+        // 生成概况信息
+        const summary = document.getElementById('gradeDetailSummary');
+        const avgScore = (students.reduce((sum, s) => sum + s.score, 0) / students.length).toFixed(1);
+        const maxScore = Math.max(...students.map(s => s.score));
+        const minScore = Math.min(...students.map(s => s.score));
+
+        summary.innerHTML = `
+            <h4>${gradeNames[gradeType]} 概况</h4>
+            <div class="summary-stats">
+                <div class="stat-item">
+                    <span class="stat-label">人数</span>
+                    <span class="stat-value">${students.length}人</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">平均分</span>
+                    <span class="stat-value">${avgScore}分</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">最高分</span>
+                    <span class="stat-value">${maxScore}分</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">最低分</span>
+                    <span class="stat-value">${minScore}分</span>
+                </div>
+            </div>
+        `;
+
+        // 生成学生列表
+        const studentList = document.getElementById('gradeDetailList');
+        let studentsHtml = `
+            <div class="list-header">
+                <span>学生姓名</span>
+                <span>成绩</span>
+                <span>排名</span>
+            </div>
+        `;
+
+        students.forEach(student => {
+            studentsHtml += `
+                <div class="student-item">
+                    <span class="student-name">${student.name}</span>
+                    <span class="student-score ${gradeType}">${student.score}分</span>
+                    <span class="student-rank">第${student.rank}名</span>
+                </div>
+            `;
+        });
+
+        studentList.innerHTML = studentsHtml;
+
+        // 显示模态框
+        document.getElementById('gradeDetailModal').style.display = 'block';
+
+        // 设置导出功能的数据
+        this.currentGradeDetailData = {
+            subject: subject,
+            gradeType: gradeType,
+            gradeName: gradeNames[gradeType],
+            students: students
+        };
+    }
+
+    // 初始化等级详情模态框事件监听器（需要在constructor中调用）
+    initGradeDetailModal() {
+        // 关闭按钮事件
+        document.getElementById('closeGradeDetailModal').addEventListener('click', () => {
+            document.getElementById('gradeDetailModal').style.display = 'none';
+        });
+
+        document.getElementById('closeGradeDetailBtn').addEventListener('click', () => {
+            document.getElementById('gradeDetailModal').style.display = 'none';
+        });
+
+        // 点击模态框外部关闭
+        document.getElementById('gradeDetailModal').addEventListener('click', (e) => {
+            if (e.target.id === 'gradeDetailModal') {
+                document.getElementById('gradeDetailModal').style.display = 'none';
+            }
+        });
+    }
+
+    // 导出等级详情列表（新增方法）
+    exportGradeDetailList() {
+        if (!this.currentGradeDetailData) {
+            this.showToast('没有可导出的数据', 'warning');
+            return;
+        }
+
+        const { subject, gradeName, students } = this.currentGradeDetailData;
+        
+        // 创建CSV内容
+        let csvContent = '\uFEFF'; // UTF-8 BOM
+        csvContent += `${subject} - ${gradeName} 学生名单\n\n`;
+        csvContent += '排名,姓名,成绩\n';
+        
+        students.forEach(student => {
+            csvContent += `${student.rank},${student.name},${student.score}\n`;
+        });
+
+        // 添加统计信息
+        const avgScore = (students.reduce((sum, s) => sum + s.score, 0) / students.length).toFixed(1);
+        const maxScore = Math.max(...students.map(s => s.score));
+        const minScore = Math.min(...students.map(s => s.score));
+
+        csvContent += `\n统计信息:\n`;
+        csvContent += `总人数,${students.length}\n`;
+        csvContent += `平均分,${avgScore}\n`;
+        csvContent += `最高分,${maxScore}\n`;
+        csvContent += `最低分,${minScore}\n`;
+
+        // 创建下载
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        
+        const timestamp = new Date().toISOString().slice(0, 10);
+        link.download = `${subject}_${gradeName}_学生名单_${timestamp}.csv`;
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
+
+        this.showToast('等级详情列表导出成功', 'success');
     }
 
     printCharts() {
-        window.print();
+        // 检查是否有可打印的内容
+        if (this.data.length === 0) {
+            this.showToast('请先加载数据', 'warning');
+            return;
+        }
+
+        // 获取图表区域和统计摘要
+        const chartsSection = document.getElementById('chartsSection');
+        if (!chartsSection || chartsSection.style.display === 'none') {
+            this.showToast('请先生成图表', 'warning');
+            return;
+        }
+
+        // 临时添加打印样式类
+        document.body.classList.add('printing');
+        
+        // 确保统计摘要在打印时可见
+        const summarySection = document.querySelector('.summary-section');
+        if (summarySection) {
+            summarySection.style.display = 'block';
+            summarySection.style.pageBreakBefore = 'always'; // 统计摘要另起一页
+        }
+
+        // 为图表卡片添加打印优化
+        const chartCards = document.querySelectorAll('.chart-card');
+        chartCards.forEach(card => {
+            if (card.style.display !== 'none') {
+                card.style.pageBreakInside = 'avoid'; // 避免图表被分页截断
+                card.style.marginBottom = '20px';
+            }
+        });
+
+        this.showToast('正在准备打印内容...', 'info');
+        
+        // 延迟执行打印，确保样式生效
+        setTimeout(() => {
+            window.print();
+            
+            // 打印后清理临时样式
+            setTimeout(() => {
+                document.body.classList.remove('printing');
+                if (summarySection) {
+                    summarySection.style.pageBreakBefore = '';
+                }
+                chartCards.forEach(card => {
+                    card.style.pageBreakInside = '';
+                    card.style.marginBottom = '';
+                });
+            }, 100);
+        }, 500);
     }
 
     // 更新：增强示例CSV下载，添加Windows兼容性
@@ -1180,8 +1412,24 @@ class GradeAnalyzer {
 
     // 保存完整分析报告为图片
     saveChartsAsImages() {
-        const visibleCharts = Object.keys(this.charts).filter(key => {
-            const card = document.getElementById(`${key}ChartCard`);
+        // 获取所有可见的图表，包括新增的图表
+        const chartMappings = {
+            'studentRanking': 'studentRankingCard',
+            'subjectStats': 'subjectStatsCard', 
+            'gradeDistribution': 'gradeDistributionCard',
+            'passRate': 'passRateCard',
+            'bar': 'barChartCard',
+            'line': 'lineChartCard',
+            'pie': 'pieChartCard',
+            'radar': 'radarChartCard',
+            'scatter': 'scatterChartCard',
+            'box': 'boxChartCard',
+            'stackedBar': 'stackedBarChartCard',
+            'heatmap': 'heatmapChartCard'
+        };
+
+        const visibleCharts = Object.keys(chartMappings).filter(key => {
+            const card = document.getElementById(chartMappings[key]);
             return card && card.style.display !== 'none' && this.charts[key];
         });
 
@@ -1207,11 +1455,11 @@ class GradeAnalyzer {
         // 设置报告canvas尺寸 (A4比例，高分辨率)
         const reportWidth = 1200;
         const chartWidth = 580;
-        const chartHeight = 400;
+        const chartHeight = 350; // 稍微减小图表高度，为统计摘要留更多空间
         const padding = 20;
         const headerHeight = 120;
-        const summaryHeight = 300; // 增加高度以容纳分析洞察
-        const chartTitleHeight = 35; // 图表标题的高度空间
+        const summaryHeight = 600; // 增加统计摘要高度，确保容纳所有内容
+        const chartTitleHeight = 40; // 增加图表标题高度
         
         // 计算需要的行数（每行2个图表）
         const chartsPerRow = 2;
@@ -1234,7 +1482,8 @@ class GradeAnalyzer {
         // 绘制图表
         const chartPromises = visibleCharts.map((chartKey, index) => {
             return new Promise((resolve) => {
-                const canvas = document.getElementById(`${chartKey}ChartCanvas`);
+                const canvasId = this.getCanvasIdByChartKey(chartKey);
+                const canvas = document.getElementById(canvasId);
                 if (canvas && canvas.width > 0 && canvas.height > 0) {
                     const row = Math.floor(index / chartsPerRow);
                     const col = index % chartsPerRow;
@@ -1244,19 +1493,23 @@ class GradeAnalyzer {
                     
                     // 绘制图表标题
                     const chartNames = {
-                        bar: '成绩分布柱状图',
-                        line: '成绩趋势折线图',
-                        pie: '等级分布饼图',
-                        radar: '综合能力雷达图',
-                        scatter: '科目相关性矩阵图',
-                        box: '分数分布箱线图',
-                        stackedBar: '成绩等级堆积柱状图',
-                        heatmap: '成绩矩阵热力图'
+                        studentRanking: '🏆 学生总分排名榜',
+                        subjectStats: '📊 各科目统计分析',
+                        gradeDistribution: '📈 各科目等级分布',
+                        passRate: '🎯 各科目及格率',
+                        bar: '📊 成绩分布柱状图',
+                        line: '📈 成绩趋势折线图',
+                        pie: '🥧 等级分布饼图',
+                        radar: '🔄 综合能力雷达图',
+                        scatter: '🔗 科目相关性矩阵图',
+                        box: '📦 分数分布箱线图',
+                        stackedBar: '📚 成绩等级堆积柱状图',
+                        heatmap: '🔥 成绩矩阵热力图'
                     };
                     
                     ctx.fillStyle = '#2c3e50';
-                    ctx.font = 'bold 16px Arial';
-                    ctx.fillText(chartNames[chartKey] || '图表', x, y + 20);
+                    ctx.font = 'bold 16px "Microsoft YaHei", Arial, sans-serif';
+                    ctx.fillText(chartNames[chartKey] || '图表', x, y + 25);
                     
                     // 绘制图表（在标题下方留出足够空间）
                     ctx.drawImage(canvas, x, y + chartTitleHeight, chartWidth, chartHeight);
@@ -1268,11 +1521,297 @@ class GradeAnalyzer {
         // 等待所有图表绘制完成，然后添加统计摘要
         Promise.all(chartPromises).then(() => {
             const summaryY = currentY + chartAreaHeight;
-            this.drawSummarySection(ctx, reportWidth, summaryY, summaryHeight);
+            this.drawEnhancedSummarySection(ctx, reportWidth, summaryY, summaryHeight);
             
             // 保存报告
             this.saveReportImage(reportCanvas);
         });
+    }
+
+    // 根据图表键获取对应的canvas ID
+    getCanvasIdByChartKey(chartKey) {
+        const canvasMapping = {
+            studentRanking: 'studentRankingCanvas',
+            subjectStats: 'subjectStatsCanvas',
+            gradeDistribution: 'gradeDistributionCanvas',
+            passRate: 'passRateCanvas',
+            bar: 'barChartCanvas',
+            line: 'lineChartCanvas', 
+            pie: 'pieChartCanvas',
+            radar: 'radarChartCanvas',
+            scatter: 'scatterChartCanvas',
+            box: 'boxChartCanvas',
+            stackedBar: 'stackedBarChartCanvas',
+            heatmap: 'heatmapChartCanvas'
+        };
+        return canvasMapping[chartKey] || `${chartKey}ChartCanvas`;
+    }
+
+    // 绘制增强的统计摘要部分
+    drawEnhancedSummarySection(ctx, width, startY, height) {
+        // 绘制摘要背景
+        ctx.fillStyle = '#f8f9fa';
+        ctx.fillRect(10, startY, width - 20, height - 10);
+        
+        // 绘制边框
+        ctx.strokeStyle = '#dee2e6';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(10, startY, width - 20, height - 10);
+        
+        // 绘制摘要标题
+        ctx.fillStyle = '#2c3e50';
+        ctx.font = 'bold 24px "Microsoft YaHei", Arial, sans-serif';
+        ctx.fillText('📊 统计摘要与分析洞察', 30, startY + 35);
+        
+        // 绘制分隔线
+        ctx.strokeStyle = '#dee2e6';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(30, startY + 45);
+        ctx.lineTo(width - 30, startY + 45);
+        ctx.stroke();
+        
+        // 动态计算各部分的位置
+        let currentY = startY + 60;
+        
+        // 绘制班级整体概况
+        const classOverviewHeight = this.drawClassOverview(ctx, width, currentY);
+        currentY += classOverviewHeight + 20; // 添加间距
+        
+        // 绘制科目统计
+        const subjectStatsHeight = this.drawSubjectStatistics(ctx, width, currentY);
+        currentY += subjectStatsHeight + 20; // 添加间距
+        
+        // 绘制分析洞察
+        this.drawAnalysisInsights(ctx, width, currentY);
+    }
+
+    // 绘制班级整体概况
+    drawClassOverview(ctx, width, startY) {
+        ctx.fillStyle = '#495057';
+        ctx.font = 'bold 18px "Microsoft YaHei", Arial, sans-serif';
+        ctx.fillText('🎯 班级整体概况', 40, startY);
+        
+        // 计算班级等级分布
+        const totalStudents = this.data.length;
+        let excellentStudents = 0;
+        let goodStudents = 0;
+        let passStudents = 0;
+        let failStudents = 0;
+
+        this.data.forEach(student => {
+            const headers = Object.keys(student);
+            let total = 0;
+            let subjectCount = 0;
+
+            headers.forEach(header => {
+                if (!['姓名', 'name', '学生姓名', 'Name', 'NAME', '学生'].includes(header)) {
+                    total += parseFloat(student[header]) || 0;
+                    subjectCount++;
+                }
+            });
+
+            const average = subjectCount > 0 ? total / subjectCount : 0;
+            
+            if (average >= 90) excellentStudents++;
+            else if (average >= 80) goodStudents++;
+            else if (average >= 60) passStudents++;
+            else failStudents++;
+        });
+
+        const stats = [
+            { label: '优秀学生', count: excellentStudents, color: '#28a745' },
+            { label: '良好学生', count: goodStudents, color: '#007bff' },
+            { label: '及格学生', count: passStudents, color: '#ffc107' },
+            { label: '待提升学生', count: failStudents, color: '#dc3545' }
+        ];
+
+        // 绘制统计卡片
+        const cardWidth = (width - 100) / 4;
+        stats.forEach((stat, index) => {
+            const x = 50 + index * cardWidth;
+            const y = startY + 25;
+            
+            // 绘制卡片背景
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(x, y, cardWidth - 10, 80);
+            ctx.strokeStyle = stat.color;
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x, y, cardWidth - 10, 80);
+            
+            // 绘制标题
+            ctx.fillStyle = stat.color;
+            ctx.font = 'bold 14px "Microsoft YaHei", Arial, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(stat.label, x + (cardWidth - 10) / 2, y + 20);
+            
+            // 绘制数量
+            ctx.font = 'bold 20px "Microsoft YaHei", Arial, sans-serif';
+            ctx.fillText(`${stat.count}人`, x + (cardWidth - 10) / 2, y + 45);
+            
+            // 绘制百分比
+            ctx.font = '12px "Microsoft YaHei", Arial, sans-serif';
+            ctx.fillStyle = '#6c757d';
+            ctx.fillText(`${((stat.count / totalStudents) * 100).toFixed(1)}%`, x + (cardWidth - 10) / 2, y + 65);
+        });
+        
+        ctx.textAlign = 'left'; // 重置文本对齐
+        
+        // 返回班级整体概况使用的总高度
+        return 105; // 标题25 + 卡片80
+    }
+
+    // 绘制科目统计
+    drawSubjectStatistics(ctx, width, startY) {
+        ctx.fillStyle = '#495057';
+        ctx.font = 'bold 18px "Microsoft YaHei", Arial, sans-serif';
+        ctx.fillText('📈 各科目表现', 40, startY);
+        
+        // 计算科目统计
+        const subjectStats = this.subjects.map(subject => {
+            const scores = this.data.map(student => student[subject]);
+            const avg = (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1);
+            const max = Math.max(...scores);
+            const min = Math.min(...scores);
+            const passRate = ((scores.filter(s => s >= 60).length / scores.length) * 100).toFixed(1);
+            
+            return { subject, avg: parseFloat(avg), max, min, passRate: parseFloat(passRate) };
+        });
+        
+        // 绘制科目表格
+        const tableY = startY + 25;
+        const rowHeight = 25;
+        const colWidths = [150, 100, 100, 100, 100];
+        const headers = ['科目', '平均分', '最高分', '最低分', '及格率'];
+        
+        // 绘制表头
+        let currentX = 50;
+        ctx.fillStyle = '#343a40';
+        ctx.fillRect(currentX, tableY, colWidths.reduce((a, b) => a + b, 0), rowHeight);
+        
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 14px "Microsoft YaHei", Arial, sans-serif';
+        headers.forEach((header, index) => {
+            ctx.fillText(header, currentX + 10, tableY + 17);
+            currentX += colWidths[index];
+        });
+        
+        // 绘制数据行
+        subjectStats.forEach((stat, rowIndex) => {
+            const y = tableY + (rowIndex + 1) * rowHeight;
+            currentX = 50;
+            
+            // 绘制行背景
+            ctx.fillStyle = rowIndex % 2 === 0 ? '#f8f9fa' : '#ffffff';
+            ctx.fillRect(currentX, y, colWidths.reduce((a, b) => a + b, 0), rowHeight);
+            
+            // 绘制数据
+            const data = [stat.subject, `${stat.avg}分`, `${stat.max}分`, `${stat.min}分`, `${stat.passRate}%`];
+            ctx.fillStyle = '#495057';
+            ctx.font = '13px "Microsoft YaHei", Arial, sans-serif';
+            
+            data.forEach((value, colIndex) => {
+                ctx.fillText(value, currentX + 10, y + 17);
+                currentX += colWidths[colIndex];
+            });
+        });
+        
+        // 返回科目统计表格使用的总高度
+        const totalRows = subjectStats.length + 1; // 数据行 + 表头
+        return 25 + (totalRows * rowHeight); // 标题25 + 表格高度
+    }
+
+    // 绘制分析洞察
+    drawAnalysisInsights(ctx, width, startY) {
+        ctx.fillStyle = '#495057';
+        ctx.font = 'bold 18px "Microsoft YaHei", Arial, sans-serif';
+        ctx.fillText('💡 分析洞察', 40, startY);
+        
+        // 分析数据并生成洞察
+        const allScores = this.getAllScores();
+        const maxScore = Math.max(...allScores);
+        const minScore = Math.min(...allScores);
+        const averageScore = (allScores.reduce((a, b) => a + b, 0) / allScores.length).toFixed(1);
+        
+        // 找出最佳和最弱科目
+        const subjectAvgs = this.subjects.map(subject => {
+            const scores = this.data.map(student => student[subject]);
+            return {
+                subject,
+                avg: (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1)
+            };
+        });
+        
+        const bestSubject = subjectAvgs.reduce((a, b) => parseFloat(a.avg) > parseFloat(b.avg) ? a : b);
+        const weakestSubject = subjectAvgs.reduce((a, b) => parseFloat(a.avg) < parseFloat(b.avg) ? a : b);
+        
+        // 找出班级前三名
+        const topStudents = this.data.map(student => {
+            const nameField = this.getNameField();
+            const headers = Object.keys(student);
+            let total = 0;
+            let subjectCount = 0;
+
+            headers.forEach(header => {
+                if (!['姓名', 'name', '学生姓名', 'Name', 'NAME', '学生'].includes(header)) {
+                    total += parseFloat(student[header]) || 0;
+                    subjectCount++;
+                }
+            });
+
+            return {
+                name: student[nameField],
+                total: total,
+                average: subjectCount > 0 ? (total / subjectCount).toFixed(1) : 0
+            };
+        }).sort((a, b) => b.total - a.total).slice(0, 3);
+        
+        const insights = [
+            `🏆 班级前三名：${topStudents.map(s => `${s.name}(${s.average}分)`).join('、')}`,
+            `📊 最优科目：${bestSubject.subject} (平均${bestSubject.avg}分)`,
+            `📈 待提升科目：${weakestSubject.subject} (平均${weakestSubject.avg}分)`,
+            `📏 分数跨度：${minScore}分 - ${maxScore}分 (差距${maxScore - minScore}分)`,
+            `🎯 班级整体水平：${averageScore >= 85 ? '优秀' : averageScore >= 75 ? '良好' : averageScore >= 65 ? '及格' : '需要加强'}`,
+            `📋 学生总数：${this.data.length}名，科目总数：${this.subjects.length}个`
+        ];
+        
+        // 绘制洞察背景框
+        const insightBoxHeight = insights.length * 22 + 20;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(40, startY + 15, width - 100, insightBoxHeight);
+        ctx.strokeStyle = '#e9ecef';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(40, startY + 15, width - 100, insightBoxHeight);
+        
+        // 绘制洞察内容
+        ctx.fillStyle = '#6c757d';
+        ctx.font = '14px "Microsoft YaHei", Arial, sans-serif';
+        insights.forEach((insight, index) => {
+            // 限制文本长度，避免超出边界
+            const maxWidth = width - 140;
+            let displayText = insight;
+            
+            // 如果文本太长，进行截断
+            if (ctx.measureText(insight).width > maxWidth) {
+                while (ctx.measureText(displayText + '...').width > maxWidth && displayText.length > 10) {
+                    displayText = displayText.slice(0, -1);
+                }
+                displayText += '...';
+            }
+            
+            ctx.fillText(displayText, 50, startY + 35 + index * 22);
+        });
+    }
+
+    // 获取姓名字段
+    getNameField() {
+        const nameFields = ['姓名', 'name', '学生姓名', 'Name', 'NAME', '学生'];
+        for (const field of nameFields) {
+            if (this.data.length > 0 && this.data[0].hasOwnProperty(field)) {
+                return field;
+            }
+        }
+        return '姓名'; // 默认返回
     }
     
     // 绘制报告头部

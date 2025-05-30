@@ -2404,33 +2404,54 @@ body.dark-mode .grade-count {
     color: #5dade2;
 }
 
-/* 暗黑模式下分析选项模态框标题样式 */
-body.dark-mode #analysisOptionsModal .modal-header h3 {
-    color: #81e6d9;
+/* 等级样式完善 */
+.grade.excellent {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
 }
 
-/* 暗黑模式下等级详情模态框学生信息样式 */
-body.dark-mode .grade-detail-list .student-name {
-    color: var(--text-light);
+.grade.good {
+    background: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
 }
 
-body.dark-mode .grade-detail-list .student-rank {
-    color: rgba(255, 255, 255, 0.7);
+.grade.pass {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
 }
 
-/* 暗黑模式下top-student卡片样式 */
-body.dark-mode .top-student {
-    background: linear-gradient(135deg, rgba(74, 85, 104, 0.6) 0%, rgba(45, 55, 72, 0.8) 100%);
-    border-left-color: #5dade2;
-    color: var(--text-light);
+.grade.fail {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
 }
 
-body.dark-mode .top-student .name {
+/* 暗黑模式下的等级样式 */
+body.dark-mode .grade.excellent {
+    background: rgba(46, 204, 113, 0.2);
+    color: #58d68d;
+    border-color: rgba(46, 204, 113, 0.3);
+}
+
+body.dark-mode .grade.good {
+    background: rgba(52, 152, 219, 0.2);
     color: #5dade2;
+    border-color: rgba(52, 152, 219, 0.3);
 }
 
-body.dark-mode .top-student .score {
-    color: rgba(255, 255, 255, 0.7);
+body.dark-mode .grade.pass {
+    background: rgba(243, 156, 18, 0.2);
+    color: #f4d03f;
+    border-color: rgba(243, 156, 18, 0.3);
+}
+
+body.dark-mode .grade.fail {
+    background: rgba(231, 76, 60, 0.2);
+    color: #ec7063;
+    border: 1px solid #f5c6cb;
 }
 
 /* 等级详情模态框样式 */
@@ -2574,13 +2595,6 @@ body.dark-mode .top-student .score {
 }
 
 /* 暗黑模式下的等级详情样式 */
-body.dark-mode #gradeDetailModal .modal-content {
-    background: rgba(45, 55, 72, 0.95);
-    color: #f7fafc;
-    border: 1px solid rgba(74, 85, 104, 0.5);
-    backdrop-filter: blur(15px);
-}
-
 body.dark-mode .grade-detail-summary {
     background: rgba(255, 255, 255, 0.1);
     border-left-color: #5dade2;
@@ -2638,6 +2652,28 @@ body.dark-mode .student-score.fail {
     color: #ec7063;
 }
 
+/* 响应式调整 */
+@media (max-width: 768px) {
+    #gradeDetailModal .modal-content {
+        max-width: 95vw;
+        margin: 10px;
+    }
+    
+    .grade-detail-summary .summary-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .grade-detail-list .list-header,
+    .grade-detail-list .student-item {
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+    }
+    
+    .grade-detail-list .student-rank {
+        display: none;
+    }
+}
+
 /* 可点击等级样式 */
 .grade.clickable-grade {
     cursor: pointer;
@@ -2674,6 +2710,64 @@ body.dark-mode .grade.clickable-grade:hover {
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
+/* 暗黑模式下的等级详情样式 */
+body.dark-mode .grade-detail-summary {
+    background: rgba(255, 255, 255, 0.1);
+    border-left-color: #5dade2;
+}
+
+body.dark-mode .grade-detail-summary h4 {
+    color: #5dade2;
+}
+
+body.dark-mode .grade-detail-summary .stat-item {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: var(--text-light);
+}
+
+body.dark-mode .grade-detail-summary .stat-value {
+    color: #5dade2;
+}
+
+body.dark-mode .grade-detail-list {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+body.dark-mode .grade-detail-list .list-header {
+    background: #5dade2;
+}
+
+body.dark-mode .grade-detail-list .student-item {
+    border-color: rgba(255, 255, 255, 0.1);
+    color: var(--text-light);
+}
+
+body.dark-mode .grade-detail-list .student-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .student-score.excellent {
+    background: rgba(46, 204, 113, 0.2);
+    color: #58d68d;
+}
+
+body.dark-mode .student-score.good {
+    background: rgba(52, 152, 219, 0.2);
+    color: #5dade2;
+}
+
+body.dark-mode .student-score.pass {
+    background: rgba(243, 156, 18, 0.2);
+    color: #f4d03f;
+}
+
+body.dark-mode .student-score.fail {
+    background: rgba(231, 76, 60, 0.2);
+    color: #ec7063;
+}
+
 /* 响应式调整 */
 @media (max-width: 768px) {
     #gradeDetailModal .modal-content {
@@ -2694,4 +2788,24 @@ body.dark-mode .grade.clickable-grade:hover {
     .grade-detail-list .student-rank {
         display: none;
     }
+}
+
+/* 暗黑模式下分析选项模态框标题样式 */
+body.dark-mode #analysisOptionsModal .modal-header h3 {
+    color: #81e6d9;
+}
+
+/* 暗黑模式下top-student卡片样式 */
+body.dark-mode .top-student {
+    background: linear-gradient(135deg, rgba(74, 85, 104, 0.6) 0%, rgba(45, 55, 72, 0.8) 100%);
+    border-left-color: #5dade2;
+    color: var(--text-light);
+}
+
+body.dark-mode .top-student .name {
+    color: #5dade2;
+}
+
+body.dark-mode .top-student .score {
+    color: rgba(255, 255, 255, 0.7);
 } 

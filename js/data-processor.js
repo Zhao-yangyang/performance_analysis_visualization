@@ -226,6 +226,71 @@ class DataProcessor {
         return subjectStats;
     }
 
+    // 获取某个科目某个等级的学生详细列表（新增方法）
+    getSubjectGradeStudents(subject, gradeType) {
+        const students = [];
+        const nameField = this.getNameField();
+        
+        this.data.forEach(student => {
+            const score = student[subject];
+            const studentName = student[nameField];
+            let matchesGrade = false;
+            
+            // 根据等级类型筛选学生
+            switch(gradeType) {
+                case 'excellent':
+                    matchesGrade = score >= 90;
+                    break;
+                case 'good':
+                    matchesGrade = score >= 80 && score < 90;
+                    break;
+                case 'pass':
+                    matchesGrade = score >= 60 && score < 80;
+                    break;
+                case 'fail':
+                    matchesGrade = score < 60;
+                    break;
+                default:
+                    matchesGrade = false;
+            }
+            
+            if (matchesGrade) {
+                students.push({
+                    name: studentName,
+                    score: score,
+                    grade: this.getGradeLevel(score),
+                    gradeType: gradeType
+                });
+            }
+        });
+        
+        // 按分数从高到低排序
+        students.sort((a, b) => b.score - a.score);
+        
+        // 添加该等级内的排名
+        students.forEach((student, index) => {
+            student.rank = index + 1;
+        });
+        
+        return students;
+    }
+
+    // 获取姓名字段名（新增辅助方法）
+    getNameField() {
+        if (this.data.length === 0) return '姓名';
+        
+        const firstStudent = this.data[0];
+        const nameFields = ['姓名', 'name', '学生姓名', 'Name', 'NAME', '学生'];
+        
+        for (let field of nameFields) {
+            if (firstStudent.hasOwnProperty(field)) {
+                return field;
+            }
+        }
+        
+        return '姓名'; // 默认返回
+    }
+
     // 生成科目排名（新增方法）
     generateSubjectRankings() {
         const subjectRankings = {};

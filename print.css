@@ -79,31 +79,168 @@
     /* 统计摘要样式 */
     .summary-section {
         page-break-before: always;
+        display: block !important;
     }
 
     .summary-grid {
-        display: grid !important;
-        grid-template-columns: repeat(2, 1fr) !important;
-        gap: 10pt !important;
+        display: block !important;
     }
 
     .summary-item {
         background: #f9f9f9 !important;
         border: 1px solid #ddd !important;
-        padding: 10pt !important;
-        text-align: center;
+        padding: 15pt !important;
+        margin-bottom: 15pt !important;
+        page-break-inside: avoid;
     }
 
     .summary-item h4 {
+        font-size: 14pt;
+        margin-bottom: 10pt;
+        color: black !important;
+        border-bottom: 1px solid #ccc;
+        padding-bottom: 5pt;
+    }
+
+    /* 班级整体分析样式 */
+    .class-analysis {
+        page-break-inside: avoid;
+    }
+
+    .class-grade-distribution {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10pt !important;
+    }
+
+    .grade-item {
+        background: white !important;
+        border: 1px solid #ddd !important;
+        padding: 8pt !important;
+        text-align: center;
+    }
+
+    .grade-label {
         font-size: 10pt;
-        margin-bottom: 5pt;
         color: black !important;
     }
 
-    .summary-item .value {
-        font-size: 14pt;
+    .grade-count, .grade-percentage {
         font-weight: bold;
         color: black !important;
+    }
+
+    /* 各科第一名样式 */
+    .subject-top-compact {
+        page-break-inside: avoid;
+    }
+
+    .subject-top-list {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 5pt !important;
+    }
+
+    .subject-top-item {
+        background: white !important;
+        border: 1px solid #ddd !important;
+        padding: 5pt !important;
+        font-size: 10pt;
+    }
+
+    .top-student {
+        background: #f0f8ff !important;
+        padding: 3pt !important;
+        border-radius: 3pt;
+        color: black !important;
+    }
+
+    /* 各科目详细统计样式 */
+    .subject-stats {
+        page-break-inside: avoid;
+    }
+
+    .subject-stats-grid {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10pt !important;
+    }
+
+    .subject-stat-item {
+        background: white !important;
+        border: 1px solid #ddd !important;
+        padding: 10pt !important;
+        page-break-inside: avoid;
+    }
+
+    .subject-stat-item h5 {
+        font-size: 12pt;
+        color: black !important;
+        margin-bottom: 8pt;
+        text-align: center;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 3pt;
+    }
+
+    .stat-details {
+        margin-bottom: 8pt;
+    }
+
+    .stat-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 3pt;
+        font-size: 9pt;
+    }
+
+    .stat-label {
+        color: #666 !important;
+    }
+
+    .stat-value {
+        font-weight: bold;
+        color: black !important;
+    }
+
+    .grade-breakdown {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 3pt !important;
+    }
+
+    .grade {
+        font-size: 8pt;
+        padding: 2pt !important;
+        text-align: center;
+        border: 1px solid #ddd !important;
+        background: white !important;
+        color: black !important;
+    }
+
+    .grade.excellent {
+        background: #e8f5e8 !important;
+    }
+
+    .grade.good {
+        background: #e8f4f8 !important;
+    }
+
+    .grade.pass {
+        background: #fff8e1 !important;
+    }
+
+    .grade.fail {
+        background: #ffe8e8 !important;
+    }
+
+    /* 新增图表的打印样式 */
+    #studentRankingCard,
+    #subjectStatsCard,
+    #gradeDistributionCard,
+    #passRateCard {
+        display: block !important;
+        page-break-inside: avoid;
+        margin-bottom: 20pt !important;
     }
 
     /* 页面分页 */
