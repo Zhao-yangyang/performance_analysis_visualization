@@ -2517,14 +2517,14 @@ body.dark-mode .top-student .score {
 
 .grade-detail-summary .summary-stats {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 10px;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 8px;
     margin-top: 10px;
 }
 
 .grade-detail-summary .stat-item {
     text-align: center;
-    padding: 8px;
+    padding: 10px 6px;
     background: white;
     border-radius: 4px;
     border: 1px solid #e9ecef;
@@ -2733,6 +2733,7 @@ body.dark-mode .grade.clickable-grade:hover {
     
     .grade-detail-summary .summary-stats {
         grid-template-columns: repeat(2, 1fr);
+        gap: 6px;
     }
     
     .grade-detail-list .list-header,
@@ -2743,5 +2744,17 @@ body.dark-mode .grade.clickable-grade:hover {
     
     .grade-detail-list .student-rank {
         display: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .grade-detail-summary .summary-stats {
+        grid-template-columns: 1fr 1fr;
+        gap: 4px;
+    }
+    
+    .grade-detail-summary .stat-item {
+        padding: 6px 4px;
+        font-size: 0.9em;
     }
 } 
