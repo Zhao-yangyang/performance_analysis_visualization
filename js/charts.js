@@ -1,7 +1,8 @@
 // 图表管理器类
 class ChartManager {
-    constructor(data) {
+    constructor(data, analysisOptions = {}) {
         this.data = data;
+        this.analysisOptions = analysisOptions;
         this.subjects = this.getSubjects();
         this.colors = {
             primary: ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#00f2fe'],
@@ -24,18 +25,61 @@ class ChartManager {
         );
     }
 
+    // 根据分析维度过滤数据
+    filterDataByAnalysis(data = this.data) {
+        let filteredData = [...data];
+        
+        // 如果选择了按分数段分析，只显示特定分数段的数据
+        if (this.analysisOptions.byScoreRange) {
+            filteredData = filteredData.filter(student => {
+                const total = this.subjects.reduce((sum, subject) => sum + student[subject], 0);
+                const average = total / this.subjects.length;
+                return average >= 80; // 只显示平均分80分以上的学生
+            });
+        }
+        
+        // 如果选择了按排名分析，只显示前10名学生
+        if (this.analysisOptions.byRanking) {
+            filteredData = filteredData
+                .map(student => {
+                    const total = this.subjects.reduce((sum, subject) => sum + student[subject], 0);
+                    return { ...student, total };
+                })
+                .sort((a, b) => b.total - a.total)
+                .slice(0, 10);
+        }
+        
+        return filteredData;
+    }
+
+    // 获取图表标题后缀（根据分析维度）
+    getChartTitleSuffix() {
+        const suffixes = [];
+        if (this.analysisOptions.byScoreRange) suffixes.push('(优秀生专项)');
+        if (this.analysisOptions.byRanking) suffixes.push('(前10名)');
+        if (this.analysisOptions.byGrade) suffixes.push('(按等级划分)');
+        if (this.analysisOptions.byStrengthSubject) suffixes.push('(优势科目)');
+        if (this.analysisOptions.byProgress) suffixes.push('(进步分析)');
+        if (this.analysisOptions.byStability) suffixes.push('(稳定性分析)');
+        return suffixes.length > 0 ? ' ' + suffixes.join(' ') : '';
+    }
+
     // 创建柱状图 - 各科目平均分
     createBarChart(canvasId) {
         const ctx = document.getElementById(canvasId).getContext('2d');
         
-        const averages = this.subjects.map(subject => {
-            const total = this.data.reduce((sum, student) => sum + student[subject], 0);
-            return (total / this.data.length).toFixed(1);
-        });
-
-        return new Chart(ctx, {
-            type: 'bar',
-            data: {
+        // 根据分析维度过滤数据
+        const filteredData = this.filterDataByAnalysis();
+        let chartData, chartTitle;
+        
+        if (this.analysisOptions.bySubject && filteredData.length > 0) {
+            // 按科目分析 - 显示各科目的平均分
+            const averages = this.subjects.map(subject => {
+                const total = filteredData.reduce((sum, student) => sum + student[subject], 0);
+                return (total / filteredData.length).toFixed(1);
+            });
+            
+            chartData = {
                 labels: this.subjects,
                 datasets: [{
                     label: '平均分',
@@ -46,14 +90,95 @@ class ChartManager {
                     borderRadius: 8,
                     borderSkipped: false,
                 }]
-            },
+            };
+            chartTitle = '各科目平均分对比' + this.getChartTitleSuffix();
+            
+        } else if (this.analysisOptions.byStudent && filteredData.length > 0) {
+            // 按学生分析 - 显示学生总分排名
+            const studentData = filteredData
+                .map(student => {
+                    const name = student['姓名'] || student['name'] || student['学生姓名'] || '未知';
+                    const total = this.subjects.reduce((sum, subject) => sum + student[subject], 0);
+                    return { name, total };
+                })
+                .sort((a, b) => b.total - a.total)
+                .slice(0, 10); // 只显示前10名
+            
+            chartData = {
+                labels: studentData.map(s => s.name),
+                datasets: [{
+                    label: '总分',
+                    data: studentData.map(s => s.total),
+                    backgroundColor: this.colors.primary.slice(0, studentData.length),
+                    borderColor: this.colors.primary.slice(0, studentData.length).map(color => color + 'CC'),
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    borderSkipped: false,
+                }]
+            };
+            chartTitle = '学生总分排名' + this.getChartTitleSuffix();
+            
+        } else if (this.analysisOptions.byGrade) {
+            // 按等级分析 - 显示各等级人数分布
+            const grades = { 'A (90-100)': 0, 'B (80-89)': 0, 'C (70-79)': 0, 'D (60-69)': 0, 'F (<60)': 0 };
+            
+            filteredData.forEach(student => {
+                this.subjects.forEach(subject => {
+                    const score = student[subject];
+                    if (score >= 90) grades['A (90-100)']++;
+                    else if (score >= 80) grades['B (80-89)']++;
+                    else if (score >= 70) grades['C (70-79)']++;
+                    else if (score >= 60) grades['D (60-69)']++;
+                    else grades['F (<60)']++;
+                });
+            });
+            
+            chartData = {
+                labels: Object.keys(grades),
+                datasets: [{
+                    label: '人次',
+                    data: Object.values(grades),
+                    backgroundColor: this.colors.primary.slice(0, 5),
+                    borderColor: this.colors.primary.slice(0, 5).map(color => color + 'CC'),
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    borderSkipped: false,
+                }]
+            };
+            chartTitle = '成绩等级分布' + this.getChartTitleSuffix();
+            
+        } else {
+            // 默认显示科目平均分
+            const averages = this.subjects.map(subject => {
+                const total = this.data.reduce((sum, student) => sum + student[subject], 0);
+                return (total / this.data.length).toFixed(1);
+            });
+            
+            chartData = {
+                labels: this.subjects,
+                datasets: [{
+                    label: '平均分',
+                    data: averages,
+                    backgroundColor: this.colors.primary.slice(0, this.subjects.length),
+                    borderColor: this.colors.primary.slice(0, this.subjects.length).map(color => color + 'CC'),
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    borderSkipped: false,
+                }]
+            };
+            chartTitle = '各科目平均分对比';
+        }
+
+        return new Chart(ctx, {
+            type: 'bar',
+            data: chartData,
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
                     title: {
                         display: true,
-                        text: '各科目平均分对比',
+                        text: chartTitle,
                         font: {
                             size: 16,
                             weight: 'bold'
@@ -66,19 +191,19 @@ class ChartManager {
                 scales: {
                     y: {
                         beginAtZero: true,
-                        max: 100,
+                        max: this.analysisOptions.byStudent ? undefined : 100,
                         ticks: {
-                            stepSize: 10
+                            stepSize: this.analysisOptions.byStudent ? undefined : 10
                         },
                         title: {
                             display: true,
-                            text: '分数'
+                            text: this.analysisOptions.byStudent ? '总分' : (this.analysisOptions.byGrade ? '人次' : '分数')
                         }
                     },
                     x: {
                         title: {
                             display: true,
-                            text: '科目'
+                            text: this.analysisOptions.byStudent ? '学生' : (this.analysisOptions.byGrade ? '等级' : '科目')
                         }
                     }
                 },
@@ -94,39 +219,156 @@ class ChartManager {
     createLineChart(canvasId) {
         const ctx = document.getElementById(canvasId).getContext('2d');
         
-        const datasets = this.data.slice(0, 6).map((student, index) => {
-            const studentName = student['姓名'] || student['name'] || student['学生姓名'];
-            const scores = this.subjects.map(subject => student[subject]);
+        // 根据分析维度过滤数据
+        const filteredData = this.filterDataByAnalysis();
+        let chartData, chartTitle;
+        
+        if (this.analysisOptions.bySubject) {
+            // 按科目分析 - 显示各科目的分数分布趋势
+            const scoreRanges = ['0-59', '60-69', '70-79', '80-89', '90-100'];
+            const datasets = this.subjects.map((subject, index) => {
+                const distribution = [0, 0, 0, 0, 0]; // 对应上面的分数段
+                
+                filteredData.forEach(student => {
+                    const score = student[subject];
+                    if (score < 60) distribution[0]++;
+                    else if (score < 70) distribution[1]++;
+                    else if (score < 80) distribution[2]++;
+                    else if (score < 90) distribution[3]++;
+                    else distribution[4]++;
+                });
+                
+                return {
+                    label: subject,
+                    data: distribution,
+                    borderColor: this.colors.primary[index % this.colors.primary.length],
+                    backgroundColor: this.colors.primary[index % this.colors.primary.length] + '20',
+                    borderWidth: 3,
+                    fill: false,
+                    tension: 0.4,
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
+                    pointBackgroundColor: this.colors.primary[index % this.colors.primary.length],
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                };
+            });
             
-            return {
-                label: studentName,
-                data: scores,
-                borderColor: this.colors.primary[index % this.colors.primary.length],
-                backgroundColor: this.colors.primary[index % this.colors.primary.length] + '20',
-                borderWidth: 3,
-                fill: false,
-                tension: 0.4,
-                pointRadius: 6,
-                pointHoverRadius: 8,
-                pointBackgroundColor: this.colors.primary[index % this.colors.primary.length],
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2
+            chartData = {
+                labels: scoreRanges,
+                datasets: datasets
             };
-        });
+            chartTitle = '各科目分数分布趋势' + this.getChartTitleSuffix();
+            
+        } else if (this.analysisOptions.byStudent) {
+            // 按学生分析 - 显示学生成绩趋势对比
+            const topStudents = filteredData
+                .map(student => {
+                    const name = student['姓名'] || student['name'] || student['学生姓名'] || '未知';
+                    const total = this.subjects.reduce((sum, subject) => sum + student[subject], 0);
+                    return { ...student, name, total };
+                })
+                .sort((a, b) => b.total - a.total)
+                .slice(0, 6); // 只显示前6名学生
+            
+            const datasets = topStudents.map((student, index) => {
+                const scores = this.subjects.map(subject => student[subject]);
+                
+                return {
+                    label: student.name,
+                    data: scores,
+                    borderColor: this.colors.primary[index % this.colors.primary.length],
+                    backgroundColor: this.colors.primary[index % this.colors.primary.length] + '20',
+                    borderWidth: 3,
+                    fill: false,
+                    tension: 0.4,
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
+                    pointBackgroundColor: this.colors.primary[index % this.colors.primary.length],
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                };
+            });
+            
+            chartData = {
+                labels: this.subjects,
+                datasets: datasets
+            };
+            chartTitle = '优秀学生成绩趋势对比' + this.getChartTitleSuffix();
+            
+        } else if (this.analysisOptions.byStability) {
+            // 按稳定性分析 - 显示成绩波动情况
+            const stabilityData = this.data.map(student => {
+                const name = student['姓名'] || student['name'] || student['学生姓名'] || '未知';
+                const scores = this.subjects.map(subject => student[subject]);
+                const avg = scores.reduce((sum, score) => sum + score, 0) / scores.length;
+                const variance = scores.reduce((sum, score) => sum + Math.pow(score - avg, 2), 0) / scores.length;
+                const stdDev = Math.sqrt(variance);
+                return { name, avg, stdDev, scores };
+            }).sort((a, b) => a.stdDev - b.stdDev).slice(0, 6); // 选择最稳定的6个学生
+            
+            const datasets = stabilityData.map((student, index) => {
+                return {
+                    label: `${student.name} (标准差: ${student.stdDev.toFixed(1)})`,
+                    data: student.scores,
+                    borderColor: this.colors.primary[index % this.colors.primary.length],
+                    backgroundColor: this.colors.primary[index % this.colors.primary.length] + '20',
+                    borderWidth: 3,
+                    fill: false,
+                    tension: 0.4,
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
+                    pointBackgroundColor: this.colors.primary[index % this.colors.primary.length],
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                };
+            });
+            
+            chartData = {
+                labels: this.subjects,
+                datasets: datasets
+            };
+            chartTitle = '成绩稳定性分析（最稳定学生）' + this.getChartTitleSuffix();
+            
+        } else {
+            // 默认显示前6名学生的成绩趋势
+            const datasets = this.data.slice(0, 6).map((student, index) => {
+                const studentName = student['姓名'] || student['name'] || student['学生姓名'];
+                const scores = this.subjects.map(subject => student[subject]);
+                
+                return {
+                    label: studentName,
+                    data: scores,
+                    borderColor: this.colors.primary[index % this.colors.primary.length],
+                    backgroundColor: this.colors.primary[index % this.colors.primary.length] + '20',
+                    borderWidth: 3,
+                    fill: false,
+                    tension: 0.4,
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
+                    pointBackgroundColor: this.colors.primary[index % this.colors.primary.length],
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                };
+            });
+            
+            chartData = {
+                labels: this.subjects,
+                datasets: datasets
+            };
+            chartTitle = '学生成绩趋势对比（前6名学生）';
+        }
 
         return new Chart(ctx, {
             type: 'line',
-            data: {
-                labels: this.subjects,
-                datasets: datasets
-            },
+            data: chartData,
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
                     title: {
                         display: true,
-                        text: '学生成绩趋势对比（前6名学生）',
+                        text: chartTitle,
                         font: {
                             size: 16,
                             weight: 'bold'
@@ -144,19 +386,19 @@ class ChartManager {
                 scales: {
                     y: {
                         beginAtZero: true,
-                        max: 100,
+                        max: this.analysisOptions.bySubject ? undefined : 100,
                         ticks: {
-                            stepSize: 10
+                            stepSize: this.analysisOptions.bySubject ? undefined : 10
                         },
                         title: {
                             display: true,
-                            text: '分数'
+                            text: this.analysisOptions.bySubject ? '人数' : '分数'
                         }
                     },
                     x: {
                         title: {
                             display: true,
-                            text: '科目'
+                            text: this.analysisOptions.bySubject ? '分数段' : '科目'
                         }
                     }
                 },
@@ -172,71 +414,148 @@ class ChartManager {
     createPieChart(canvasId) {
         const ctx = document.getElementById(canvasId).getContext('2d');
         
-        const grades = { 'A (90-100)': 0, 'B (80-89)': 0, 'C (70-79)': 0, 'D (60-69)': 0, 'F (<60)': 0 };
+        // 根据分析维度过滤数据
+        const filteredData = this.filterDataByAnalysis();
+        let chartData, chartTitle;
         
-        this.data.forEach(student => {
-            this.subjects.forEach(subject => {
-                const score = student[subject];
-                if (score >= 90) grades['A (90-100)']++;
-                else if (score >= 80) grades['B (80-89)']++;
-                else if (score >= 70) grades['C (70-79)']++;
-                else if (score >= 60) grades['D (60-69)']++;
-                else grades['F (<60)']++;
+        if (this.analysisOptions.bySubject) {
+            // 按科目分析 - 显示各科目的优秀率分布
+            const subjectExcellentRates = this.subjects.map(subject => {
+                const excellentCount = filteredData.filter(student => student[subject] >= 85).length;
+                return {
+                    subject: subject,
+                    rate: ((excellentCount / filteredData.length) * 100).toFixed(1)
+                };
             });
-        });
-
-        const labels = Object.keys(grades);
-        const data = Object.values(grades);
-
-        return new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: labels,
+            
+            chartData = {
+                labels: subjectExcellentRates.map(item => `${item.subject} (${item.rate}%)`),
                 datasets: [{
-                    data: data,
+                    data: subjectExcellentRates.map(item => parseFloat(item.rate)),
+                    backgroundColor: this.colors.primary.slice(0, this.subjects.length),
+                    borderColor: '#fff',
+                    borderWidth: 3,
+                    hoverBorderWidth: 4,
+                }]
+            };
+            chartTitle = '各科目优秀率分布' + this.getChartTitleSuffix();
+            
+        } else if (this.analysisOptions.byStudent) {
+            // 按学生分析 - 显示学生等级分布
+            const studentGrades = { '优秀(平均90+)': 0, '良好(平均80-89)': 0, '中等(平均70-79)': 0, '及格(平均60-69)': 0, '不及格(<60)': 0 };
+            
+            filteredData.forEach(student => {
+                const total = this.subjects.reduce((sum, subject) => sum + student[subject], 0);
+                const average = total / this.subjects.length;
+                if (average >= 90) studentGrades['优秀(平均90+)']++;
+                else if (average >= 80) studentGrades['良好(平均80-89)']++;
+                else if (average >= 70) studentGrades['中等(平均70-79)']++;
+                else if (average >= 60) studentGrades['及格(平均60-69)']++;
+                else studentGrades['不及格(<60)']++;
+            });
+            
+            chartData = {
+                labels: Object.keys(studentGrades),
+                datasets: [{
+                    data: Object.values(studentGrades),
                     backgroundColor: this.colors.primary,
                     borderColor: '#fff',
                     borderWidth: 3,
                     hoverBorderWidth: 4,
-                    hoverBorderColor: '#667eea'
                 }]
-            },
+            };
+            chartTitle = '学生成绩等级分布' + this.getChartTitleSuffix();
+            
+        } else if (this.analysisOptions.byStrengthSubject) {
+            // 按优势科目分析 - 显示学生优势科目分布
+            const strengthSubjects = {};
+            this.subjects.forEach(subject => {
+                strengthSubjects[subject] = 0;
+            });
+            
+            filteredData.forEach(student => {
+                let maxScore = -1;
+                let strengthSubject = '';
+                this.subjects.forEach(subject => {
+                    if (student[subject] > maxScore) {
+                        maxScore = student[subject];
+                        strengthSubject = subject;
+                    }
+                });
+                if (strengthSubject) {
+                    strengthSubjects[strengthSubject]++;
+                }
+            });
+            
+            chartData = {
+                labels: Object.keys(strengthSubjects).map(subject => `${subject} (${strengthSubjects[subject]}人)`),
+                datasets: [{
+                    data: Object.values(strengthSubjects),
+                    backgroundColor: this.colors.primary.slice(0, this.subjects.length),
+                    borderColor: '#fff',
+                    borderWidth: 3,
+                    hoverBorderWidth: 4,
+                }]
+            };
+            chartTitle = '学生优势科目分布' + this.getChartTitleSuffix();
+            
+        } else {
+            // 默认显示成绩等级分布
+            const grades = { 'A (90-100)': 0, 'B (80-89)': 0, 'C (70-79)': 0, 'D (60-69)': 0, 'F (<60)': 0 };
+            
+            this.data.forEach(student => {
+                this.subjects.forEach(subject => {
+                    const score = student[subject];
+                    if (score >= 90) grades['A (90-100)']++;
+                    else if (score >= 80) grades['B (80-89)']++;
+                    else if (score >= 70) grades['C (70-79)']++;
+                    else if (score >= 60) grades['D (60-69)']++;
+                    else grades['F (<60)']++;
+                });
+            });
+            
+            chartData = {
+                labels: Object.keys(grades),
+                datasets: [{
+                    data: Object.values(grades),
+                    backgroundColor: this.colors.primary,
+                    borderColor: '#fff',
+                    borderWidth: 3,
+                    hoverBorderWidth: 4,
+                }]
+            };
+            chartTitle = '成绩等级分布';
+        }
+
+        return new Chart(ctx, {
+            type: 'doughnut',
+            data: chartData,
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
                     title: {
                         display: true,
-                        text: '成绩等级分布',
+                        text: chartTitle,
                         font: {
                             size: 16,
                             weight: 'bold'
                         }
                     },
                     legend: {
-                        display: true,
                         position: 'bottom',
                         labels: {
-                            usePointStyle: true,
                             padding: 15,
+                            usePointStyle: true,
                             color: '#333'
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                const percentage = ((context.parsed * 100) / total).toFixed(1);
-                                return `${context.label}: ${context.parsed} (${percentage}%)`;
-                            }
                         }
                     }
                 },
-                cutout: '50%',
                 animation: {
                     animateRotate: true,
                     animateScale: true,
-                    duration: 2000
+                    duration: 2000,
+                    easing: 'easeInOutBounce'
                 }
             }
         });

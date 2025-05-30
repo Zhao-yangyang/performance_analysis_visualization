@@ -6,7 +6,6 @@
     <title>成绩分析可视化系统</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="libs/chart.css">
-    <link rel="stylesheet" href="print.css">
 </head>
 <body>
     <div class="container">
@@ -117,7 +116,6 @@
                     <div class="chart-controls">
                         <button id="refreshChartsBtn" class="btn btn-primary">🔄 刷新图表</button>
                         <button id="saveImageBtn" class="btn btn-secondary">📄 保存报告</button>
-                        <button id="printBtn" class="btn btn-secondary">🖨️ 打印图表</button>
                     </div>
                 </div>
                 
@@ -333,38 +331,63 @@
                             
                             <div class="option-group">
                                 <h3>分析维度</h3>
+                                <p class="option-desc">选择分析维度将改变图表的数据展示方式和分析角度</p>
                                 <div class="checkbox-group">
                                     <label class="checkbox-label">
-                                        <input type="checkbox" id="bySubject" checked>
-                                        <span>按科目分析</span>
+                                        <div class="checkbox-row">
+                                            <input type="checkbox" id="bySubject" checked>
+                                            <span>按科目分析</span>
+                                        </div>
+                                        <small>重点关注各科目的表现差异和分布情况</small>
                                     </label>
                                     <label class="checkbox-label">
-                                        <input type="checkbox" id="byStudent" checked>
-                                        <span>按学生分析</span>
+                                        <div class="checkbox-row">
+                                            <input type="checkbox" id="byStudent" checked>
+                                            <span>按学生分析</span>
+                                        </div>
+                                        <small>重点关注优秀学生的成绩表现和排名情况</small>
                                     </label>
                                     <label class="checkbox-label">
-                                        <input type="checkbox" id="byGrade" checked>
-                                        <span>按等级分析</span>
+                                        <div class="checkbox-row">
+                                            <input type="checkbox" id="byGrade" checked>
+                                            <span>按等级分析</span>
+                                        </div>
+                                        <small>重点关注成绩等级的分布和比例</small>
                                     </label>
                                     <label class="checkbox-label">
-                                        <input type="checkbox" id="byScoreRange">
-                                        <span>按分数段分析</span>
+                                        <div class="checkbox-row">
+                                            <input type="checkbox" id="byScoreRange">
+                                            <span>按分数段分析</span>
+                                        </div>
+                                        <small>仅分析平均分80分以上的优秀学生</small>
                                     </label>
                                     <label class="checkbox-label">
-                                        <input type="checkbox" id="byRanking">
-                                        <span>按排名分析</span>
+                                        <div class="checkbox-row">
+                                            <input type="checkbox" id="byRanking">
+                                            <span>按排名分析</span>
+                                        </div>
+                                        <small>仅分析总分排名前10的学生</small>
                                     </label>
                                     <label class="checkbox-label">
-                                        <input type="checkbox" id="byStrengthSubject">
-                                        <span>按优势科目分析</span>
+                                        <div class="checkbox-row">
+                                            <input type="checkbox" id="byStrengthSubject">
+                                            <span>按优势科目分析</span>
+                                        </div>
+                                        <small>分析每个学生的最强科目分布情况</small>
                                     </label>
                                     <label class="checkbox-label">
-                                        <input type="checkbox" id="byProgress">
-                                        <span>按进步情况分析</span>
+                                        <div class="checkbox-row">
+                                            <input type="checkbox" id="byProgress">
+                                            <span>按进步情况分析</span>
+                                        </div>
+                                        <small>分析学生的成绩变化趋势（需要多次数据）</small>
                                     </label>
                                     <label class="checkbox-label">
-                                        <input type="checkbox" id="byStability">
-                                        <span>按成绩稳定性分析</span>
+                                        <div class="checkbox-row">
+                                            <input type="checkbox" id="byStability">
+                                            <span>按成绩稳定性分析</span>
+                                        </div>
+                                        <small>分析学生各科目成绩的稳定性和波动情况</small>
                                     </label>
                                 </div>
                             </div>

@@ -82,13 +82,9 @@ class GradeAnalyzer {
             this.refreshCharts();
         });
 
+        // 导出和打印按钮
         document.getElementById('saveImageBtn').addEventListener('click', () => {
             this.saveChartsAsImages();
-        });
-
-        // 导出和打印按钮
-        document.getElementById('printBtn').addEventListener('click', () => {
-            this.printCharts();
         });
 
         // 数据管理按钮
@@ -575,7 +571,7 @@ class GradeAnalyzer {
                 group1.className = 'form-group';
                 group1.innerHTML = `
                     <label>${subject1}:</label>
-                    <input type="number" id="subject_${i}" data-subject="${subject1}" placeholder="0-100" min="0" max="100">
+                    <input type="number" id="subject_${i}" data-subject="${subject1}" placeholder="输入成绩" min="0" max="100">
                 `;
                 rowDiv.appendChild(group1);
 
@@ -586,7 +582,7 @@ class GradeAnalyzer {
                     group2.className = 'form-group';
                     group2.innerHTML = `
                         <label>${subject2}:</label>
-                        <input type="number" id="subject_${i + 1}" data-subject="${subject2}" placeholder="0-100" min="0" max="100">
+                        <input type="number" id="subject_${i + 1}" data-subject="${subject2}" placeholder="输入成绩" min="0" max="100">
                     `;
                     rowDiv.appendChild(group2);
                 }
@@ -807,129 +803,109 @@ class GradeAnalyzer {
             }
         });
 
-        const chartManager = new ChartManager(this.data);
-        console.log('ChartManager已创建');
-        
-        // 获取选中的图表类型（包含新增的图表）
-        const studentRanking = document.getElementById('studentRanking').checked;
-        const subjectStats = document.getElementById('subjectStats').checked;
-        const gradeDistribution = document.getElementById('gradeDistribution').checked;
-        const passRate = document.getElementById('passRate').checked;
-        const barChart = document.getElementById('barChart').checked;
-        const lineChart = document.getElementById('lineChart').checked;
-        const pieChart = document.getElementById('pieChart').checked;
-        const radarChart = document.getElementById('radarChart').checked;
-        const scatterChart = document.getElementById('scatterChart').checked;
-        const boxChart = document.getElementById('boxChart').checked;
-        const stackedBarChart = document.getElementById('stackedBarChart').checked;
-        const heatmapChart = document.getElementById('heatmapChart').checked;
+        // 获取选中的图表类型
+        const chartOptions = {
+            studentRanking: document.getElementById('studentRanking').checked,
+            subjectStats: document.getElementById('subjectStats').checked,
+            gradeDistribution: document.getElementById('gradeDistribution').checked,
+            passRate: document.getElementById('passRate').checked,
+            barChart: document.getElementById('barChart').checked,
+            lineChart: document.getElementById('lineChart').checked,
+            pieChart: document.getElementById('pieChart').checked,
+            radarChart: document.getElementById('radarChart').checked,
+            scatterChart: document.getElementById('scatterChart').checked,
+            boxChart: document.getElementById('boxChart').checked,
+            stackedBarChart: document.getElementById('stackedBarChart').checked,
+            heatmapChart: document.getElementById('heatmapChart').checked
+        };
 
-        console.log('选中的图表类型:', {
-            studentRanking, subjectStats, gradeDistribution, passRate,
-            barChart, lineChart, pieChart, radarChart, 
-            scatterChart, boxChart, stackedBarChart, heatmapChart
-        });
+        // 获取选中的分析维度
+        const analysisOptions = {
+            bySubject: document.getElementById('bySubject').checked,
+            byStudent: document.getElementById('byStudent').checked,
+            byGrade: document.getElementById('byGrade').checked,
+            byScoreRange: document.getElementById('byScoreRange').checked,
+            byRanking: document.getElementById('byRanking').checked,
+            byStrengthSubject: document.getElementById('byStrengthSubject').checked,
+            byProgress: document.getElementById('byProgress').checked,
+            byStability: document.getElementById('byStability').checked
+        };
 
-        // 显示/隐藏图表卡片（包含新增的图表）
-        document.getElementById('studentRankingCard').style.display = studentRanking ? 'block' : 'none';
-        document.getElementById('subjectStatsCard').style.display = subjectStats ? 'block' : 'none';
-        document.getElementById('gradeDistributionCard').style.display = gradeDistribution ? 'block' : 'none';
-        document.getElementById('passRateCard').style.display = passRate ? 'block' : 'none';
-        document.getElementById('barChartCard').style.display = barChart ? 'block' : 'none';
-        document.getElementById('lineChartCard').style.display = lineChart ? 'block' : 'none';
-        document.getElementById('pieChartCard').style.display = pieChart ? 'block' : 'none';
-        document.getElementById('radarChartCard').style.display = radarChart ? 'block' : 'none';
-        document.getElementById('scatterChartCard').style.display = scatterChart ? 'block' : 'none';
-        document.getElementById('boxChartCard').style.display = boxChart ? 'block' : 'none';
-        document.getElementById('stackedBarChartCard').style.display = stackedBarChart ? 'block' : 'none';
-        document.getElementById('heatmapChartCard').style.display = heatmapChart ? 'block' : 'none';
+        console.log('选中的图表类型:', chartOptions);
+        console.log('选中的分析维度:', analysisOptions);
 
-        // 生成新增的图表
-        if (studentRanking) {
+        // 检查是否至少选择了一个分析维度
+        const hasAnalysisDimension = Object.values(analysisOptions).some(checked => checked);
+        if (!hasAnalysisDimension) {
+            this.showToast('请至少选择一个分析维度', 'warning');
+            return;
+        }
+
+        const chartManager = new ChartManager(this.data, analysisOptions);
+        console.log('ChartManager已创建，包含分析选项');
+
+        // 显示/隐藏图表卡片
+        document.getElementById('studentRankingCard').style.display = chartOptions.studentRanking ? 'block' : 'none';
+        document.getElementById('subjectStatsCard').style.display = chartOptions.subjectStats ? 'block' : 'none';
+        document.getElementById('gradeDistributionCard').style.display = chartOptions.gradeDistribution ? 'block' : 'none';
+        document.getElementById('passRateCard').style.display = chartOptions.passRate ? 'block' : 'none';
+        document.getElementById('barChartCard').style.display = chartOptions.barChart ? 'block' : 'none';
+        document.getElementById('lineChartCard').style.display = chartOptions.lineChart ? 'block' : 'none';
+        document.getElementById('pieChartCard').style.display = chartOptions.pieChart ? 'block' : 'none';
+        document.getElementById('radarChartCard').style.display = chartOptions.radarChart ? 'block' : 'none';
+        document.getElementById('scatterChartCard').style.display = chartOptions.scatterChart ? 'block' : 'none';
+        document.getElementById('boxChartCard').style.display = chartOptions.boxChart ? 'block' : 'none';
+        document.getElementById('stackedBarChartCard').style.display = chartOptions.stackedBarChart ? 'block' : 'none';
+        document.getElementById('heatmapChartCard').style.display = chartOptions.heatmapChart ? 'block' : 'none';
+
+        // 生成选中的图表
+        if (chartOptions.studentRanking) {
             console.log('创建学生排名图表...');
-            const canvas = document.getElementById('studentRankingCanvas');
-            console.log('学生排名图表canvas元素:', canvas);
             this.charts.studentRanking = chartManager.createStudentRankingChart('studentRankingCanvas');
-            console.log('学生排名图表创建结果:', this.charts.studentRanking);
         }
-        if (subjectStats) {
+        if (chartOptions.subjectStats) {
             console.log('创建科目统计图表...');
-            const canvas = document.getElementById('subjectStatsCanvas');
-            console.log('科目统计图表canvas元素:', canvas);
             this.charts.subjectStats = chartManager.createSubjectStatsChart('subjectStatsCanvas');
-            console.log('科目统计图表创建结果:', this.charts.subjectStats);
         }
-        if (gradeDistribution) {
+        if (chartOptions.gradeDistribution) {
             console.log('创建等级分布图表...');
-            const canvas = document.getElementById('gradeDistributionCanvas');
-            console.log('等级分布图表canvas元素:', canvas);
             this.charts.gradeDistribution = chartManager.createGradeDistributionChart('gradeDistributionCanvas');
-            console.log('等级分布图表创建结果:', this.charts.gradeDistribution);
         }
-        if (passRate) {
+        if (chartOptions.passRate) {
             console.log('创建及格率图表...');
-            const canvas = document.getElementById('passRateCanvas');
-            console.log('及格率图表canvas元素:', canvas);
             this.charts.passRate = chartManager.createPassRateChart('passRateCanvas');
-            console.log('及格率图表创建结果:', this.charts.passRate);
         }
-
-        // 生成选中的原有图表
-        if (barChart) {
+        if (chartOptions.barChart) {
             console.log('创建柱状图...');
-            const canvas = document.getElementById('barChartCanvas');
-            console.log('柱状图canvas元素:', canvas);
             this.charts.bar = chartManager.createBarChart('barChartCanvas');
-            console.log('柱状图创建结果:', this.charts.bar);
         }
-        if (lineChart) {
+        if (chartOptions.lineChart) {
             console.log('创建折线图...');
-            const canvas = document.getElementById('lineChartCanvas');
-            console.log('折线图canvas元素:', canvas);
             this.charts.line = chartManager.createLineChart('lineChartCanvas');
-            console.log('折线图创建结果:', this.charts.line);
         }
-        if (pieChart) {
+        if (chartOptions.pieChart) {
             console.log('创建饼图...');
-            const canvas = document.getElementById('pieChartCanvas');
-            console.log('饼图canvas元素:', canvas);
             this.charts.pie = chartManager.createPieChart('pieChartCanvas');
-            console.log('饼图创建结果:', this.charts.pie);
         }
-        if (radarChart) {
+        if (chartOptions.radarChart) {
             console.log('创建雷达图...');
-            const canvas = document.getElementById('radarChartCanvas');
-            console.log('雷达图canvas元素:', canvas);
             this.charts.radar = chartManager.createRadarChart('radarChartCanvas');
-            console.log('雷达图创建结果:', this.charts.radar);
         }
-        if (scatterChart) {
+        if (chartOptions.scatterChart) {
             console.log('创建散点图...');
-            const canvas = document.getElementById('scatterChartCanvas');
-            console.log('散点图canvas元素:', canvas);
             this.charts.scatter = chartManager.createScatterChart('scatterChartCanvas');
-            console.log('散点图创建结果:', this.charts.scatter);
         }
-        if (boxChart) {
+        if (chartOptions.boxChart) {
             console.log('创建箱线图...');
-            const canvas = document.getElementById('boxChartCanvas');
-            console.log('箱线图canvas元素:', canvas);
             this.charts.box = chartManager.createBoxChart('boxChartCanvas');
-            console.log('箱线图创建结果:', this.charts.box);
         }
-        if (stackedBarChart) {
+        if (chartOptions.stackedBarChart) {
             console.log('创建堆积柱状图...');
-            const canvas = document.getElementById('stackedBarChartCanvas');
-            console.log('堆积柱状图canvas元素:', canvas);
             this.charts.stackedBar = chartManager.createStackedBarChart('stackedBarChartCanvas');
-            console.log('堆积柱状图创建结果:', this.charts.stackedBar);
         }
-        if (heatmapChart) {
+        if (chartOptions.heatmapChart) {
             console.log('创建热力图...');
-            const canvas = document.getElementById('heatmapChartCanvas');
-            console.log('热力图canvas元素:', canvas);
             this.charts.heatmap = chartManager.createHeatmapChart('heatmapChartCanvas');
-            console.log('热力图创建结果:', this.charts.heatmap);
         }
         
         console.log('图表创建完成');
@@ -1261,109 +1237,6 @@ class GradeAnalyzer {
         URL.revokeObjectURL(link.href);
 
         this.showToast('等级详情列表导出成功', 'success');
-    }
-
-    printCharts() {
-        // 检查是否有可打印的内容
-        if (this.data.length === 0) {
-            this.showToast('请先加载数据', 'warning');
-            return;
-        }
-
-        // 获取图表区域和统计摘要
-        const chartsSection = document.getElementById('chartsSection');
-        if (!chartsSection || chartsSection.style.display === 'none') {
-            this.showToast('请先生成图表', 'warning');
-            return;
-        }
-
-        // 临时添加打印样式类
-        document.body.classList.add('printing');
-        
-        // 确保统计摘要在打印时可见
-        const summarySection = document.querySelector('.summary-section');
-        if (summarySection) {
-            summarySection.style.display = 'block';
-            summarySection.style.pageBreakBefore = 'always'; // 统计摘要另起一页
-        }
-
-        // 为图表卡片添加打印优化
-        const chartCards = document.querySelectorAll('.chart-card');
-        chartCards.forEach(card => {
-            if (card.style.display !== 'none') {
-                card.style.pageBreakInside = 'avoid'; // 避免图表被分页截断
-                card.style.marginBottom = '20px';
-            }
-        });
-
-        this.showToast('正在准备打印内容...', 'info');
-        
-        // 延迟执行打印，确保样式生效
-        setTimeout(() => {
-            window.print();
-            
-            // 打印后清理临时样式
-            setTimeout(() => {
-                document.body.classList.remove('printing');
-                if (summarySection) {
-                    summarySection.style.pageBreakBefore = '';
-                }
-                chartCards.forEach(card => {
-                    card.style.pageBreakInside = '';
-                    card.style.marginBottom = '';
-                });
-            }, 100);
-        }, 500);
-    }
-
-    // 更新：增强示例CSV下载，添加Windows兼容性
-    downloadSampleCSV() {
-        // 使用当前科目列表生成示例CSV
-        const headers = ['姓名', ...this.subjects];
-        const headerRow = headers.join(',');
-        
-        // 生成示例数据行
-        const sampleRows = [
-            `张三,${this.subjects.map(() => Math.floor(Math.random() * 40 + 60)).join(',')}`,
-            `李四,${this.subjects.map(() => Math.floor(Math.random() * 40 + 60)).join(',')}`,
-            `王五,${this.subjects.map(() => Math.floor(Math.random() * 40 + 60)).join(',')}`,
-            `赵六,${this.subjects.map(() => Math.floor(Math.random() * 40 + 60)).join(',')}`,
-            `钱七,${this.subjects.map(() => Math.floor(Math.random() * 40 + 60)).join(',')}`,
-            `孙八,${this.subjects.map(() => Math.floor(Math.random() * 40 + 60)).join(',')}`
-        ];
-        
-        // 创建CSV内容（只包含纯数据，不包含说明文字）
-        const csvContent = headerRow + '\n' + sampleRows.join('\n');
-        
-        // 添加UTF-8 BOM以确保Windows系统正确识别编码
-        const BOM = '\uFEFF';
-        const csvWithBOM = BOM + csvContent;
-
-        // 创建下载链接
-        const blob = new Blob([csvWithBOM], { 
-            type: 'text/csv;charset=utf-8;' 
-        });
-        
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        
-        // 生成文件名，包含时间戳以避免重复
-        const timestamp = new Date().toISOString().slice(0, 10);
-        link.download = `成绩数据示例_${this.subjects.length}科目_${timestamp}.csv`;
-        
-        // 触发下载
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        // 释放URL对象
-        URL.revokeObjectURL(link.href);
-        
-        // 显示提示信息
-        this.showToast(
-            `示例CSV下载成功！包含${this.subjects.length}个科目，已优化Windows兼容性，可直接用Excel打开`, 
-            'success'
-        );
     }
 
     // 清空数据
@@ -1767,12 +1640,12 @@ class GradeAnalyzer {
         }).sort((a, b) => b.total - a.total).slice(0, 3);
         
         const insights = [
-            `🏆 班级前三名：${topStudents.map(s => `${s.name}(${s.average}分)`).join('、')}`,
-            `📊 最优科目：${bestSubject.subject} (平均${bestSubject.avg}分)`,
-            `📈 待提升科目：${weakestSubject.subject} (平均${weakestSubject.avg}分)`,
-            `📏 分数跨度：${minScore}分 - ${maxScore}分 (差距${maxScore - minScore}分)`,
-            `🎯 班级整体水平：${averageScore >= 85 ? '优秀' : averageScore >= 75 ? '良好' : averageScore >= 65 ? '及格' : '需要加强'}`,
-            `📋 学生总数：${this.data.length}名，科目总数：${this.subjects.length}个`
+            `🏆 总分排名前三名：${topStudents.map(s => `${s.name}(总分${s.total}分,均分${s.average}分)`).join('、')}`,
+            `📊 班级最优科目：${bestSubject.subject}，班级平均分${bestSubject.avg}分`,
+            `📈 班级薄弱科目：${weakestSubject.subject}，班级平均分${weakestSubject.avg}分`,
+            `📏 全班分数分布：最高${maxScore}分，最低${minScore}分，跨度${maxScore - minScore}分`,
+            `🎯 班级整体水平：全科平均${averageScore}分，等级为${averageScore >= 85 ? '优秀' : averageScore >= 75 ? '良好' : averageScore >= 65 ? '及格' : '需要提升'}`,
+            `📋 数据概况：共${this.data.length}名学生，${this.subjects.length}个考试科目`
         ];
         
         // 绘制洞察背景框
@@ -1945,10 +1818,10 @@ class GradeAnalyzer {
         const weakestSubject = subjectAvgs.reduce((a, b) => parseFloat(a.avg) < parseFloat(b.avg) ? a : b);
         
         const insights = [
-            `最优科目: ${bestSubject.subject} (平均${bestSubject.avg}分)`,
-            `待提升科目: ${weakestSubject.subject} (平均${weakestSubject.avg}分)`,
-            `分数跨度: ${minScore}分 - ${maxScore}分 (差距${maxScore - minScore}分)`,
-            `班级整体水平: ${averageScore >= 80 ? '优秀' : averageScore >= 70 ? '良好' : averageScore >= 60 ? '及格' : '需要提升'}`
+            `班级最优科目: ${bestSubject.subject}，班级平均分${bestSubject.avg}分`,
+            `班级薄弱科目: ${weakestSubject.subject}，班级平均分${weakestSubject.avg}分`,
+            `全班分数分布: 最高${maxScore}分，最低${minScore}分，跨度${maxScore - minScore}分`,
+            `班级整体水平: 全科平均${averageScore}分，等级为${averageScore >= 80 ? '优秀' : averageScore >= 70 ? '良好' : averageScore >= 60 ? '及格' : '需要提升'}`
         ];
         
         ctx.fillStyle = '#6c757d';
@@ -2224,6 +2097,56 @@ class GradeAnalyzer {
         }, 300);
         
         console.log('暗黑模式已禁用，body classes:', document.body.className);
+    }
+
+    // 更新：增强示例CSV下载，添加Windows兼容性
+    downloadSampleCSV() {
+        // 使用当前科目列表生成示例CSV
+        const headers = ['姓名', ...this.subjects];
+        const headerRow = headers.join(',');
+        
+        // 生成示例数据行
+        const sampleRows = [
+            `张三,${this.subjects.map(() => Math.floor(Math.random() * 40 + 60)).join(',')}`,
+            `李四,${this.subjects.map(() => Math.floor(Math.random() * 40 + 60)).join(',')}`,
+            `王五,${this.subjects.map(() => Math.floor(Math.random() * 40 + 60)).join(',')}`,
+            `赵六,${this.subjects.map(() => Math.floor(Math.random() * 40 + 60)).join(',')}`,
+            `钱七,${this.subjects.map(() => Math.floor(Math.random() * 40 + 60)).join(',')}`,
+            `孙八,${this.subjects.map(() => Math.floor(Math.random() * 40 + 60)).join(',')}`
+        ];
+        
+        // 创建CSV内容（只包含纯数据，不包含说明文字）
+        const csvContent = headerRow + '\n' + sampleRows.join('\n');
+        
+        // 添加UTF-8 BOM以确保Windows系统正确识别编码
+        const BOM = '\uFEFF';
+        const csvWithBOM = BOM + csvContent;
+
+        // 创建下载链接
+        const blob = new Blob([csvWithBOM], { 
+            type: 'text/csv;charset=utf-8;' 
+        });
+        
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        
+        // 生成文件名，包含时间戳以避免重复
+        const timestamp = new Date().toISOString().slice(0, 10);
+        link.download = `成绩数据示例_${this.subjects.length}科目_${timestamp}.csv`;
+        
+        // 触发下载
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // 释放URL对象
+        URL.revokeObjectURL(link.href);
+        
+        // 显示提示信息
+        this.showToast(
+            `示例CSV下载成功！包含${this.subjects.length}个科目，已优化Windows兼容性，可直接用Excel打开`, 
+            'success'
+        );
     }
 }
 
