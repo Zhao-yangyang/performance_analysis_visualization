@@ -1024,15 +1024,15 @@ class GradeAnalyzer {
                     <div class="stat-details">
                         <div class="stat-row">
                             <span class="stat-label">平均分：</span>
-                            <span class="stat-value avg-score">${stats.average}分</span>
+                            <span class="stat-value avg-score">${stats.average}</span>
                         </div>
                         <div class="stat-row">
                             <span class="stat-label">最高分：</span>
-                            <span class="stat-value max-score">${stats.max}分</span>
+                            <span class="stat-value max-score">${stats.max}</span>
                         </div>
                         <div class="stat-row">
                             <span class="stat-label">最低分：</span>
-                            <span class="stat-value min-score">${stats.min}分</span>
+                            <span class="stat-value min-score">${stats.min}</span>
                         </div>
                         <div class="stat-row">
                             <span class="stat-label">及格率：</span>
@@ -1128,15 +1128,15 @@ class GradeAnalyzer {
                 </div>
                 <div class="stat-item">
                     <span class="stat-label">平均分</span>
-                    <span class="stat-value">${avgScore}分</span>
+                    <span class="stat-value">${avgScore}</span>
                 </div>
                 <div class="stat-item">
                     <span class="stat-label">最高分</span>
-                    <span class="stat-value">${maxScore}分</span>
+                    <span class="stat-value">${maxScore}</span>
                 </div>
                 <div class="stat-item">
                     <span class="stat-label">最低分</span>
-                    <span class="stat-value">${minScore}分</span>
+                    <span class="stat-value">${minScore}</span>
                 </div>
             </div>
         `;
@@ -1155,7 +1155,7 @@ class GradeAnalyzer {
             studentsHtml += `
                 <div class="student-item">
                     <span class="student-name">${student.name}</span>
-                    <span class="student-score ${gradeType}">${student.score}分</span>
+                    <span class="student-score ${gradeType}">${student.score}</span>
                     <span class="student-rank">第${student.rank}名</span>
                 </div>
             `;
